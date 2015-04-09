@@ -10,7 +10,7 @@ Drone.io build and test status
 
 Appveyor build and test status (Windows)
 
-[![Build status](https://ci.appveyor.com/api/projects/status/jsuo65sa631h0kav?svg=true)](https://ci.appveyor.com/project/dirvine/maidsafe-types)
+[![Build status](https://ci.appveyor.com/api/projects/status/jsuo65sa631h0kav?svg=true)](https://ci.appveyor.com/project/dirvine/lru_time_cache)
 
 Code Coverage
 
