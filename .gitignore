@@ -1,0 +1,13 @@
+*.exe
+*.lock
+*.swp
+tags*
+build/
+build-tests/
+target/
+*~
+/.idea
+tests/tmp*
+src/tmp*
+*.sublime-*
+.project
