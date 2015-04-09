@@ -1,0 +1,17 @@
+[package]
+
+name = "lru_time_cache"
+version = "0.0.8"
+authors = ["David Irvine <david.irvine@maidsafe.net>"]
+description = "This is Pre alpha, and not useful, no code worth looking at."
+documentation = "http://dirvine.github.io/lru_time_cache/"
+repository = "https://github.com/dirvine/lru_time_cache"
+readme = "README.md"
+license = "GPL-3.0"
+homepage = "http://www.maidsafe.net"
+
+[dependencies]
+rustc-serialize = "*"
+cbor = "*"
+sodiumoxide = "*"
+rand = "*"
