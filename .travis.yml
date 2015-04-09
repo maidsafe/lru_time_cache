@@ -1,12 +1,10 @@
 os:
-  - linux
-  - osx
+- linux
+- osx
 language: rust
-rust: 
-    - 1.0.0-beta
-    - nightly
-
-
+rust:
+- 1.0.0-beta
+- nightly
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
@@ -25,4 +23,6 @@ after_success: |
   sudo make install &&
   cd ../.. &&
   kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/maidsafe_types-*;
-
+env:
+  global:
+    secure: XtPUi7NjTC8DRzZngbPuc4YUC5zAsPwgt+VLyHakcmm500fVlPnlk4BxIPunxwhfYAF2QJqHEVP9erKtGmOgCZUI9fIQHUzZpKfl44xFp4WQo77JkIiFWxHetDifRue53Ci89knhfVk/F1V5Ru5NW96WxfHJKm0g8SSn3rdXNOc=
