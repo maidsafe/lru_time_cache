@@ -4,13 +4,10 @@ Travis build and test status
 
 [![Build Status](https://travis-ci.org/dirvine/lru_time_cache.svg?branch=master)](https://travis-ci.org/dirvine/lru_time_cache)
 
-Drone.io build and test status
-
-[![Build Status](https://drone.io/github.com/dirvine/lru_time_cache/status.png)](https://drone.io/github.com/dirvine/lru_time_cache/latest)
 
 Appveyor build and test status (Windows)
 
-[![Build status](https://ci.appveyor.com/api/projects/status/jsuo65sa631h0kav?svg=true)](https://ci.appveyor.com/project/dirvine/maidsafe-types)
+[![Build status](https://ci.appveyor.com/api/projects/status/jsuo65sa631h0kav?svg=true)](https://ci.appveyor.com/project/dirvine/lru_time_cache)
 
 Code Coverage
 
@@ -21,4 +18,13 @@ Code Coverage
 
 #Todo
 
+- [ ] Implement add_key_value
+- [ ] Test add_key_value (time and size based tests)
+- [ ] Implement has_key
+- [ ] Test has_key (time and size based tests)
+- [ ] Implement get_value(key)
+- [ ] Test get_value (time and size based tests)
+- [ ] API version 0.8.0
+- [ ] Implement delete_key  
+- [ ] Test delete_key (time and size based tests)
 - [ ] API version 0.1.0
