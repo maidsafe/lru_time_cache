@@ -4,9 +4,6 @@ Travis build and test status
 
 [![Build Status](https://travis-ci.org/dirvine/lru_time_cache.svg?branch=master)](https://travis-ci.org/dirvine/lru_time_cache)
 
-Drone.io build and test status
-
-[![Build Status](https://drone.io/github.com/dirvine/lru_time_cache/status.png)](https://drone.io/github.com/dirvine/lru_time_cache/latest)
 
 Appveyor build and test status (Windows)
 
