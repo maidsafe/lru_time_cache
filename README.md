@@ -13,7 +13,6 @@ Code Coverage
 
 [![Coverage Status](https://coveralls.io/repos/dirvine/lru_time_cache/badge.svg)](https://coveralls.io/r/dirvine/lru_time_cache)
 
-
 [Documentation](http://dirvine.github.io/lru_time_cache/)
 
 #Todo
