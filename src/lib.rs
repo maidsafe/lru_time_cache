@@ -32,7 +32,7 @@ extern crate chrono;
 use std::usize;
 use std::collections;
 
-pub struct LruCache<K, V> where K: PartialOrd + Ord + Clone {
+pub struct LruCache<K, V> where K: PartialOrd + Clone {
     map: collections::BTreeMap<K, (V, chrono::DateTime<chrono::Local>)>,
     list: collections::VecDeque<K>,
     capacity: usize,
@@ -116,9 +116,18 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
 #[cfg(test)]
 mod test {
     extern crate chrono;
+    extern crate rand;
 
     use super::LruCache;
     use std::old_io;
+
+    fn generate_random_vec<T>(len: usize) -> Vec<T> where T: rand::Rand {
+        let mut vec = Vec::<T>::with_capacity(len);
+        for _ in 0..len {
+            vec.push(rand::random::<T>());
+        }
+        vec
+    }
 
     #[test]
     fn size_only() {
@@ -136,7 +145,7 @@ mod test {
             assert_eq!(lru_cache.len(), size);
         }
 
-        for i in (0..1000).rev() {
+        for _ in (0..1000).rev() {
             assert!(lru_cache.check(&(1000 - 1)));
             assert!(lru_cache.get(1000 - 1).is_some());
             assert_eq!(*lru_cache.get(1000 - 1).unwrap(), 1000 - 1);
@@ -188,6 +197,38 @@ mod test {
 
         old_io::timer::sleep(chrono::duration::Duration::milliseconds(100));
         lru_cache.add(1, 1);
+
+        assert_eq!(lru_cache.len(), 1);
+    }
+
+    #[test]
+    fn time_size_struct_value() {
+        let size = 100usize;
+        let time_to_live = chrono::duration::Duration::milliseconds(100);
+
+        #[derive(PartialEq, PartialOrd, Ord, Clone, Eq)]
+        struct Temp {
+            id: Vec<u8>,
+        }
+
+        let mut lru_cache = LruCache::<Temp, usize>::with_expiry_duration_and_capacity(time_to_live, size);
+
+        for i in 0..1000 {
+            if i < size {
+                assert_eq!(lru_cache.len(), i);
+            }
+
+            lru_cache.add(Temp { id: generate_random_vec::<u8>(64), }, i);
+
+            if i < size {
+                assert_eq!(lru_cache.len(), i + 1);
+            } else {
+                assert_eq!(lru_cache.len(), size);
+            }
+        }
+
+        old_io::timer::sleep(chrono::duration::Duration::milliseconds(100));
+        lru_cache.add(Temp { id: generate_random_vec::<u8>(64), }, 1);
 
         assert_eq!(lru_cache.len(), 1);
     }
