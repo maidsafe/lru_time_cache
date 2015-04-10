@@ -18,13 +18,13 @@ Code Coverage
 
 #Todo
 
-- [ ] Implement add_key_value
-- [ ] Test add_key_value (time and size based tests)
-- [ ] Implement has_key
-- [ ] Test has_key (time and size based tests)
-- [ ] Implement get_value(key)
-- [ ] Test get_value (time and size based tests)
-- [ ] API version 0.8.0
+- [x] Implement add_key_value
+- [x] Test add_key_value (time and size based tests)
+- [x] Implement check
+- [x] Test check (time and size based tests)
+- [x] Implement get(key)
+- [x] Test get (time and size based tests)
+- [x] API version 0.8.0
 - [ ] Implement delete_key  
 - [ ] Test delete_key (time and size based tests)
 - [ ] API version 0.1.0
