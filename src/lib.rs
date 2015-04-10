@@ -22,6 +22,7 @@
        html_favicon_url = "http://maidsafe.net/img/favicon.ico",
               html_root_url = "http://dirvine.github.io/dirvine/lru_time_cache/")]
 #![feature(std_misc)]
+#![feature(old_io)]
 
 //! #lru cache limited via size or time  
 //! 
@@ -114,7 +115,10 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
 
 #[cfg(test)]
 mod test {
+    extern crate chrono;
+
     use super::LruCache;
+    use std::old_io;
 
     #[test]
     fn size_only() {
@@ -136,6 +140,29 @@ mod test {
             assert!(lru_cache.check(&(1000 - 1)));
             assert!(lru_cache.get(1000 - 1).is_some());
             assert_eq!(*lru_cache.get(1000 - 1).unwrap(), 1000 - 1);
+        }
+    }
+
+    #[test]
+    fn time_only() {
+        let time_to_live = chrono::duration::Duration::milliseconds(100);
+        let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+
+        for i in 0..10 {
+            assert_eq!(lru_cache.len(), i);
+            lru_cache.add(i, i);
+            assert_eq!(lru_cache.len(), i + 1);
+        }
+
+        old_io::timer::sleep(chrono::duration::Duration::milliseconds(100));
+        lru_cache.add(11, 11);
+
+        assert_eq!(lru_cache.len(), 1);
+
+        for i in 0..10 {
+            assert_eq!(lru_cache.len(), i + 1);
+            lru_cache.add(i, i);
+            assert_eq!(lru_cache.len(), i + 2);
         }
     }
 }
