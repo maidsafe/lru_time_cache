@@ -111,3 +111,31 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::LruCache;
+
+    #[test]
+    fn size_only() {
+        let size = 10usize;
+        let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);
+
+        for i in 0..10 {
+            assert_eq!(lru_cache.len(), i);
+            lru_cache.add(i, i);
+            assert_eq!(lru_cache.len(), i + 1);
+        }
+
+        for i in 10..1000 {
+            lru_cache.add(i, i);
+            assert_eq!(lru_cache.len(), size);
+        }
+
+        for i in (0..1000).rev() {
+            assert!(lru_cache.check(&(1000 - 1)));
+            assert!(lru_cache.get(1000 - 1).is_some());
+            assert_eq!(*lru_cache.get(1000 - 1).unwrap(), 1000 - 1);
+        }
+    }
+}
