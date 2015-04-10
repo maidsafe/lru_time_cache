@@ -165,4 +165,30 @@ mod test {
             assert_eq!(lru_cache.len(), i + 2);
         }
     }
+
+    #[test]
+    fn time_and_size() {
+        let size = 10usize;
+        let time_to_live = chrono::duration::Duration::milliseconds(100);
+        let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);
+
+        for i in 0..1000 {
+            if i < size {
+                assert_eq!(lru_cache.len(), i);
+            }
+
+            lru_cache.add(i, i);
+
+            if i < size {
+                assert_eq!(lru_cache.len(), i + 1);
+            } else {
+                assert_eq!(lru_cache.len(), size);
+            }
+        }
+
+        old_io::timer::sleep(chrono::duration::Duration::milliseconds(100));
+        lru_cache.add(1, 1);
+
+        assert_eq!(lru_cache.len(), 1);
+    }
 }
