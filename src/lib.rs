@@ -34,7 +34,7 @@
 //!
 //!`let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);`
 //!
-//!##Or as time based LruCach
+//!##Or as time based LruCache
 //! 
 //! `let time_to_live = chrono::duration::Duration::milliseconds(100);`
 //!
@@ -51,8 +51,8 @@ extern crate chrono;
 
 use std::usize;
 use std::collections;
-/// Allows Last Recently Used container which may be limited by size or time
-/// as any element is accessed at all it is reordered to most recently seen
+/// Allows Last Recently Used container which may be limited by size or time.
+/// As any element is accessed at all it is reordered to most recently seen
 pub struct LruCache<K, V> where K: PartialOrd + Clone {
     map: collections::BTreeMap<K, (V, chrono::DateTime<chrono::Local>)>,
     list: collections::VecDeque<K>,
