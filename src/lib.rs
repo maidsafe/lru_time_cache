@@ -24,26 +24,27 @@
 #![feature(std_misc)]
 #![feature(old_io)]
 
-//! #lru cache limited via size or time  
+//!#lru cache limited via size or time  
 //! 
 //! This container allows time or size to be the limiting factor for any key/value types.
 //!
-//! #Use
+//!#Use
 //!
-//! To use as size based LruCache 
+//!##To use as size based LruCache 
 //!
-//!```let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);```
+//!`let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);`
 //!
-//! or as time based LruCach
+//!##Or as time based LruCach
 //! 
-//! ```let time_to_live = chrono::duration::Duration::milliseconds(100);
-//!    let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);```
-//! 
-//! or as time or size limited cache
+//! `let time_to_live = chrono::duration::Duration::milliseconds(100);`
 //!
-//! ``` let size = 10usize;
+//! `let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);`
+//! 
+//!##Or as time or size limited cache
+//!
+//! ` let size = 10usize;
 //!     let time_to_live = chrono::duration::Duration::milliseconds(100);
-//!     let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);```
+//!     let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);`
 
 
 extern crate chrono;
