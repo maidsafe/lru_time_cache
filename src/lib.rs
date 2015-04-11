@@ -26,19 +26,39 @@
 
 //! #lru cache limited via size or time  
 //! 
+//! This container allows time or size to be the limiting factor for any key/value types.
+//!
+//! #Use
+//!
+//! To use as size based LruCache 
+//!
+//!```let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);```
+//!
+//! or as time based LruCach
+//! 
+//! ```let time_to_live = chrono::duration::Duration::milliseconds(100);
+//!    let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);```
+//! 
+//! or as time or size limited cache
+//!
+//! ``` let size = 10usize;
+//!     let time_to_live = chrono::duration::Duration::milliseconds(100);
+//!     let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);```
+
 
 extern crate chrono;
 
 use std::usize;
 use std::collections;
-
+/// Allows Last Recently Used container which may be limited by size or time
+/// as any element is accessed at all it is reordered to most recently seen
 pub struct LruCache<K, V> where K: PartialOrd + Clone {
     map: collections::BTreeMap<K, (V, chrono::DateTime<chrono::Local>)>,
     list: collections::VecDeque<K>,
     capacity: usize,
     time_to_live: chrono::duration::Duration,
 }
-
+/// constructor for size (capacity) based LruCache
 impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
     pub fn with_capacity(capacity: usize) -> LruCache<K, V> {
         LruCache {
@@ -48,7 +68,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
             time_to_live: chrono::duration::MAX,
         }
     }
-
+/// constructor for time based LruCache
     pub fn with_expiry_duration(time_to_live: chrono::duration::Duration) -> LruCache<K, V> {
         LruCache {
             map: collections::BTreeMap::new(),
@@ -57,7 +77,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
             time_to_live: time_to_live,
         }
     }
-
+/// constructor for dual feature capacity or time based LruCache
     pub fn with_expiry_duration_and_capacity(time_to_live: chrono::duration::Duration, capacity: usize) -> LruCache<K, V> {
         LruCache {
             map: collections::BTreeMap::new(),
@@ -66,7 +86,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
             time_to_live: time_to_live,
         }
     }
-
+/// Add a key/value pair to cache
     pub fn add(&mut self, key: K, value: V) {
         if !self.map.contains_key(&key) {
             while self.check_time_expired() || self.map.len() == self.capacity {
@@ -77,7 +97,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
             self.map.insert(key, (value, chrono::Local::now()));
         }
     }
-
+/// Retrieve a value from cache
     pub fn get(&mut self, key: K) -> Option<&V> {
        let get_result = self.map.get(&key);
 
@@ -90,11 +110,11 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
            None
        }
     }
-
+/// Check for existance of a key
     pub fn check(&self, key: &K) -> bool {
         self.map.contains_key(key)
     }
-
+/// Current size of cache
     pub fn len(&self) -> usize {
         self.map.len()
     }
