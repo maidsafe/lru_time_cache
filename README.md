@@ -5,7 +5,7 @@
 |[![Build Status](https://travis-ci.org/dirvine/lru_time_cache.svg?branch=master)](https://travis-ci.org/dirvine/lru_time_cache)|[![Build status](https://ci.appveyor.com/api/projects/status/jsuo65sa631h0kav?svg=true)](https://ci.appveyor.com/project/dirvine/lru_time_cache)|[![Coverage Status](https://coveralls.io/repos/dirvine/lru_time_cache/badge.svg)](https://coveralls.io/r/dirvine/lru_time_cache)|
 
 
-| [Documentation](http://dirvine.github.io/lru_time_cache/) | [MaidSafe System Documention](http://systemdocs.maidsafe.net/) | [MaidSafe web site](http:://www.maidsafe.net) | [Safe Community site](http:://www.maidsafe.org) |
+| [Documentation](http://dirvine.github.io/lru_time_cache/) | [MaidSafe System Documention](http://systemdocs.maidsafe.net/) | [MaidSafe web site](http://www.maidsafe.net) | [Safe Community site](https://forum.safenetwork.io) |
 
 #Overview 
 
