@@ -22,7 +22,6 @@
        html_favicon_url = "http://maidsafe.net/img/favicon.ico",
               html_root_url = "http://dirvine.github.io/dirvine/lru_time_cache/")]
 #![feature(std_misc)]
-#![feature(old_io)]
 
 //!#lru cache limited via size or time  
 //! 
@@ -96,6 +95,18 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
 
             self.list.push_back(key.clone());
             self.map.insert(key, (value, chrono::Local::now()));
+        }
+    }
+/// Remove a key/value pair from cache
+    pub fn remove(&mut self, key: K)  -> Option<V> {
+        let result = self.map.remove(&key);
+
+        if result.is_some() {
+           let position = self.list.iter().enumerate().find(|a| !(*a.1 < key || *a.1 > key)).unwrap().0;
+           self.list.remove(position);
+           Some(result.unwrap().0)
+        } else {
+           None
         }
     }
 /// Retrieve a value from cache
