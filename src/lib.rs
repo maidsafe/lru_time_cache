@@ -43,7 +43,7 @@
 //! ` let size = 10usize;
 //!     let time_to_live = chrono::duration::Duration::milliseconds(100);
 //!     let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);`
-#![feature(std_misc, old_io)]
+#![feature(std_misc)]
 
 extern crate time;
 
@@ -96,6 +96,18 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
             self.map.insert(key, (value, time::SteadyTime::now()));
         }
     }
+/// Remove a key/value pair from cache
+    pub fn remove(&mut self, key: K)  -> Option<V> {
+        let result = self.map.remove(&key);
+
+        if result.is_some() {
+           let position = self.list.iter().enumerate().find(|a| !(*a.1 < key || *a.1 > key)).unwrap().0;
+           self.list.remove(position);
+           Some(result.unwrap().0)
+        } else {
+           None
+        }
+    }
 /// Retrieve a value from cache
     pub fn get(&mut self, key: K) -> Option<&V> {
        let get_result = self.map.get(&key);
@@ -136,7 +148,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
 mod test {
     extern crate time;
     extern crate rand;
-    use std::old_io;
+    use std::thread;
     use std::time::duration::Duration;
     use super::LruCache;
 
@@ -182,7 +194,7 @@ mod test {
             assert_eq!(lru_cache.len(), i + 1);
         }
 
-        old_io::timer::sleep(Duration::milliseconds(100));
+        thread::sleep_ms(100);
         lru_cache.add(11, 11);
 
         assert_eq!(lru_cache.len(), 1);
@@ -214,7 +226,7 @@ mod test {
             }
         }
 
-        old_io::timer::sleep(Duration::milliseconds(100));
+        thread::sleep_ms(100);
         lru_cache.add(1, 1);
 
         assert_eq!(lru_cache.len(), 1);
@@ -246,7 +258,7 @@ mod test {
             }
         }
 
-        old_io::timer::sleep(Duration::milliseconds(100));
+        thread::sleep_ms(100);
         lru_cache.add(Temp { id: generate_random_vec::<u8>(64), }, 1);
 
         assert_eq!(lru_cache.len(), 1);
