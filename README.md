@@ -20,6 +20,6 @@ Provides a Last Recently Used [caching algorithm](http://en.wikipedia.org/wiki/C
 - [x] Implement get(key)
 - [x] Test get (time and size based tests)
 - [x] API version 0.8.0
-- [ ] Implement delete_key  
-- [ ] Test delete_key (time and size based tests)
-- [ ] API version 0.1.0
+- [x] Implement delete_key  
+- [x] Test delete_key (time and size based tests)
+- [x] API version 0.1.0
