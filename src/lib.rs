@@ -21,7 +21,6 @@
 #![doc(html_logo_url = "http://maidsafe.net/img/Resources/branding/maidsafe_logo.fab2.png",
        html_favicon_url = "http://maidsafe.net/img/favicon.ico",
               html_root_url = "http://dirvine.github.io/dirvine/lru_time_cache/")]
-#![feature(std_misc)]
 
 //!#lru cache limited via size or time  
 //! 
@@ -45,18 +44,17 @@
 //!     let time_to_live = chrono::duration::Duration::milliseconds(100);
 //!     let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);`
 
-
-extern crate chrono;
+extern crate time;
 
 use std::usize;
 use std::collections;
 /// Allows Last Recently Used container which may be limited by size or time.
 /// As any element is accessed at all it is reordered to most recently seen
 pub struct LruCache<K, V> where K: PartialOrd + Clone {
-    map: collections::BTreeMap<K, (V, chrono::DateTime<chrono::Local>)>,
+    map: collections::BTreeMap<K, (V, time::SteadyTime)>,
     list: collections::VecDeque<K>,
     capacity: usize,
-    time_to_live: chrono::duration::Duration,
+    time_to_live: time::Duration,
 }
 /// constructor for size (capacity) based LruCache
 impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
@@ -65,11 +63,11 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
             map: collections::BTreeMap::new(),
             list: collections::VecDeque::new(),
             capacity: capacity,
-            time_to_live: chrono::duration::MAX,
+            time_to_live: time::Duration::max_value(),
         }
     }
 /// constructor for time based LruCache
-    pub fn with_expiry_duration(time_to_live: chrono::duration::Duration) -> LruCache<K, V> {
+    pub fn with_expiry_duration(time_to_live: time::Duration) -> LruCache<K, V> {
         LruCache {
             map: collections::BTreeMap::new(),
             list: collections::VecDeque::new(),
@@ -78,7 +76,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
         }
     }
 /// constructor for dual feature capacity or time based LruCache
-    pub fn with_expiry_duration_and_capacity(time_to_live: chrono::duration::Duration, capacity: usize) -> LruCache<K, V> {
+    pub fn with_expiry_duration_and_capacity(time_to_live: time::Duration, capacity: usize) -> LruCache<K, V> {
         LruCache {
             map: collections::BTreeMap::new(),
             list: collections::VecDeque::new(),
@@ -94,7 +92,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
             }
 
             self.list.push_back(key.clone());
-            self.map.insert(key, (value, chrono::Local::now()));
+            self.map.insert(key, (value, time::SteadyTime::now()));
         }
     }
 /// Remove a key/value pair from cache
@@ -137,21 +135,21 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
     }
 
     fn check_time_expired(&self) -> bool {
-        if self.time_to_live == chrono::duration::MAX || self.map.len() == 0 {
+        if self.time_to_live == time::Duration::max_value() || self.map.len() == 0 {
             false
         } else {
-            self.map.get(self.list.front().unwrap()).unwrap().1 + self.time_to_live < chrono::Local::now()
+            self.map.get(self.list.front().unwrap()).unwrap().1 + self.time_to_live < time::SteadyTime::now()
         }
     }
 }
 
 #[cfg(test)]
 mod test {
-    extern crate chrono;
+    extern crate time;
     extern crate rand;
-
-    use super::LruCache;
     use std::old_io;
+    use std::time::duration::Duration;
+    use super::LruCache;
 
     fn generate_random_vec<T>(len: usize) -> Vec<T> where T: rand::Rand {
         let mut vec = Vec::<T>::with_capacity(len);
@@ -186,7 +184,7 @@ mod test {
 
     #[test]
     fn time_only() {
-        let time_to_live = chrono::duration::Duration::milliseconds(100);
+        let time_to_live = time::Duration::milliseconds(100);
         let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
         for i in 0..10 {
@@ -195,7 +193,7 @@ mod test {
             assert_eq!(lru_cache.len(), i + 1);
         }
 
-        old_io::timer::sleep(chrono::duration::Duration::milliseconds(100));
+        old_io::timer::sleep(Duration::milliseconds(100));
         lru_cache.add(11, 11);
 
         assert_eq!(lru_cache.len(), 1);
@@ -210,7 +208,7 @@ mod test {
     #[test]
     fn time_and_size() {
         let size = 10usize;
-        let time_to_live = chrono::duration::Duration::milliseconds(100);
+        let time_to_live = time::Duration::milliseconds(100);
         let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);
 
         for i in 0..1000 {
@@ -227,7 +225,7 @@ mod test {
             }
         }
 
-        old_io::timer::sleep(chrono::duration::Duration::milliseconds(100));
+        old_io::timer::sleep(Duration::milliseconds(100));
         lru_cache.add(1, 1);
 
         assert_eq!(lru_cache.len(), 1);
@@ -236,7 +234,7 @@ mod test {
     #[test]
     fn time_size_struct_value() {
         let size = 100usize;
-        let time_to_live = chrono::duration::Duration::milliseconds(100);
+        let time_to_live = time::Duration::milliseconds(100);
 
         #[derive(PartialEq, PartialOrd, Ord, Clone, Eq)]
         struct Temp {
@@ -259,7 +257,7 @@ mod test {
             }
         }
 
-        old_io::timer::sleep(chrono::duration::Duration::milliseconds(100));
+        old_io::timer::sleep(Duration::milliseconds(100));
         lru_cache.add(Temp { id: generate_random_vec::<u8>(64), }, 1);
 
         assert_eq!(lru_cache.len(), 1);

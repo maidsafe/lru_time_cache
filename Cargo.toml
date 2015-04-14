@@ -11,5 +11,5 @@ license = "GPL-3.0"
 homepage = "http://www.maidsafe.net"
 
 [dependencies]
-chrono = "*"
+time = "*"
 rand = "*"
