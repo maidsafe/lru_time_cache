@@ -4,7 +4,7 @@ os:
 sudo: true
 language: rust
 rust:
-#- 1.0.0-beta
+- 1.0.0-beta
 - nightly
 before_install:
     - sudo apt-get update -qq

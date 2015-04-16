@@ -43,7 +43,6 @@
 //! ` let size = 10usize;
 //!     let time_to_live = chrono::duration::Duration::milliseconds(100);
 //!     let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);`
-#![feature(std_misc)]
 
 extern crate time;
 
@@ -146,10 +145,9 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
 
 #[cfg(test)]
 mod test {
-    extern crate time;
+    use time;
     extern crate rand;
     use std::thread;
-    use std::time::duration::Duration;
     use super::LruCache;
 
     fn generate_random_vec<T>(len: usize) -> Vec<T> where T: rand::Rand {
