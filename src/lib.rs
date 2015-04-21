@@ -1,20 +1,20 @@
 /*  Copyright 2015 MaidSafe.net limited
 
-    This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
+    This SAFE Network Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
     licence you accepted on initial access to the Software (the "Licences").
 
-    By contributing code to the MaidSafe Software, or to this project generally, you agree to be
+    By contributing code to the SAFE Network Software, or to this project generally, you agree to be
     bound by the terms of the MaidSafe Contributor Agreement, version 1.0, found in the root
     directory of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also
-    available at: http://www.maidsafe.net/licenses
+    available at: http://maidsafe.net/network-platform-licensing
 
-    Unless required by applicable law or agreed to in writing, the MaidSafe Software distributed
+    Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
     under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
     OF ANY KIND, either express or implied.
 
     See the Licences for the specific language governing permissions and limitations relating to
-    use of the MaidSafe Software.                                                                 */
+    use of the SAFE Network Software.                                                                 */
 
 #![crate_name = "lru_time_cache"]
 #![crate_type = "lib"]
@@ -48,15 +48,14 @@ extern crate time;
 
 use std::usize;
 use std::collections;
-/// Allows Last Recently Used container which may be limited by size or time.
-/// As any element is accessed at all it is reordered to most recently seen
+/// Provides a Last Recently Used caching algorithm in a container which may be limited by size or time, reordered to most recently seen.
 pub struct LruCache<K, V> where K: PartialOrd + Clone {
     map: collections::BTreeMap<K, (V, time::SteadyTime)>,
     list: collections::VecDeque<K>,
     capacity: usize,
     time_to_live: time::Duration,
 }
-/// constructor for size (capacity) based LruCache
+/// Constructor for size (capacity) based LruCache
 impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
     pub fn with_capacity(capacity: usize) -> LruCache<K, V> {
         LruCache {
@@ -66,7 +65,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
             time_to_live: time::Duration::max_value(),
         }
     }
-/// constructor for time based LruCache
+/// Constructor for time based LruCache
     pub fn with_expiry_duration(time_to_live: time::Duration) -> LruCache<K, V> {
         LruCache {
             map: collections::BTreeMap::new(),
@@ -75,7 +74,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
             time_to_live: time_to_live,
         }
     }
-/// constructor for dual feature capacity or time based LruCache
+/// Constructor for dual feature capacity, or time based LruCache
     pub fn with_expiry_duration_and_capacity(time_to_live: time::Duration, capacity: usize) -> LruCache<K, V> {
         LruCache {
             map: collections::BTreeMap::new(),
@@ -120,7 +119,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
            None
        }
     }
-/// Check for existance of a key
+/// Check for existence of a key
     pub fn check(&self, key: &K) -> bool {
         self.map.contains_key(key)
     }
