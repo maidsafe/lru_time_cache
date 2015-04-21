@@ -2,7 +2,7 @@
 
 |Crate|Travis|Appveyor|Coverage|
 |:-------:|:-------:|:------:|:------:|
-|[![](http://meritbadge.herokuapp.com/lru_time_cache)](https://crates.io/crates/lru_time_cache)|[![Build Status](https://travis-ci.org/dirvine/lru_time_cache.svg?branch=master)](https://travis-ci.org/dirvine/lru_time_cache)|[![Build status](https://ci.appveyor.com/api/projects/status/jsuo65sa631h0kav?svg=true)](https://ci.appveyor.com/project/dirvine/lru_time_cache)|[![Coverage Status](https://coveralls.io/repos/dirvine/lru_time_cache/badge.svg)](https://coveralls.io/r/dirvine/lru_time_cache)|
+|[![](http://meritbadge.herokuapp.com/lru_time_cache)](https://crates.io/crates/lru_time_cache)|[![Build Status](https://travis-ci.org/dirvine/lru_time_cache.svg?branch=master)](https://travis-ci.org/dirvine/lru_time_cache)|[![Build status](https://ci.appveyor.com/api/projects/status/y8r3p2xg9klu161f/branch/master?svg=true)](https://ci.appveyor.com/project/dirvine/lru-time-cache/branch/master)|[![Coverage Status](https://coveralls.io/repos/dirvine/lru_time_cache/badge.svg)](https://coveralls.io/r/dirvine/lru_time_cache)|
 
 
 | [ API Documentation](http://dirvine.github.io/lru_time_cache/) | [SAFE Network System Documentation](http://systemdocs.maidsafe.net/) | [MaidSafe web site](http://www.maidsafe.net) | [Safe Community site](https://forum.safenetwork.io) |
