@@ -49,14 +49,15 @@ extern crate time;
 use std::usize;
 use std::collections;
 /// Provides a Last Recently Used caching algorithm in a container which may be limited by size or time, reordered to most recently seen.
-pub struct LruCache<K, V> where K: PartialOrd + Clone {
+pub struct LruCache<K, V> {
     map: collections::BTreeMap<K, (V, time::SteadyTime)>,
     list: collections::VecDeque<K>,
     capacity: usize,
     time_to_live: time::Duration,
 }
+
 /// Constructor for size (capacity) based LruCache
-impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
+impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     pub fn with_capacity(capacity: usize) -> LruCache<K, V> {
         LruCache {
             map: collections::BTreeMap::new(),
@@ -126,6 +127,15 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone {
 /// Current size of cache
     pub fn len(&self) -> usize {
         self.map.len()
+    }
+
+    pub fn retrieve_all(&self) -> Vec<(K, V)> {
+        let mut result = Vec::<(K, V)>::with_capacity(self.map.len());
+        self.map.iter().all(|a| {
+            result.push((a.0.clone(), a.1 .0.clone()));
+            true
+        });
+        result
     }
 
     fn remove_oldest_element(&mut self) {
@@ -259,5 +269,20 @@ mod test {
         lru_cache.add(Temp { id: generate_random_vec::<u8>(64), }, 1);
 
         assert_eq!(lru_cache.len(), 1);
+    }
+
+    #[test]
+    fn retrieve_all() {
+        let size = 10usize;
+        let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);
+
+        for i in 0..10 {
+            lru_cache.add(i, i);
+        }
+
+        let all = lru_cache.retrieve_all();
+        assert_eq!(all.len(), lru_cache.map.len());
+
+        assert!(all.iter().all(|a| lru_cache.check(&a.0) && *lru_cache.get(a.0).unwrap() == a.1));
     }
 }
