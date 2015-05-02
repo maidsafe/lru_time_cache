@@ -95,11 +95,11 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         }
     }
 /// Remove a key/value pair from cache
-    pub fn remove(&mut self, key: K)  -> Option<V> {
-        let result = self.map.remove(&key);
+    pub fn remove(&mut self, key: &K)  -> Option<V> {
+        let result = self.map.remove(key);
 
         if result.is_some() {
-           let position = self.list.iter().enumerate().find(|a| !(*a.1 < key || *a.1 > key)).unwrap().0;
+           let position = self.list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
            self.list.remove(position);
            Some(result.unwrap().0)
         } else {
@@ -107,11 +107,11 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         }
     }
 /// Retrieve a value from cache
-    pub fn get(&mut self, key: K) -> Option<&V> {
-       let get_result = self.map.get(&key);
+    pub fn get(&mut self, key: &K) -> Option<&V> {
+       let get_result = self.map.get(key);
 
        if get_result.is_some() {
-           let pos_in_list = self.list.iter().enumerate().find(|a| !(*a.1 < key || *a.1 > key)).unwrap().0;
+           let pos_in_list = self.list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
            self.list.remove(pos_in_list);
            self.list.push_back(key.clone());
            Some(&get_result.unwrap().0)
@@ -184,8 +184,8 @@ mod test {
 
         for _ in (0..1000).rev() {
             assert!(lru_cache.check(&(1000 - 1)));
-            assert!(lru_cache.get(1000 - 1).is_some());
-            assert_eq!(*lru_cache.get(1000 - 1).unwrap(), 1000 - 1);
+            assert!(lru_cache.get(&(1000 - 1)).is_some());
+            assert_eq!(*lru_cache.get(&(1000 - 1)).unwrap(), 1000 - 1);
         }
     }
 
@@ -282,6 +282,6 @@ mod test {
         let all = lru_cache.retrieve_all();
         assert_eq!(all.len(), lru_cache.map.len());
 
-        assert!(all.iter().all(|a| lru_cache.check(&a.0) && *lru_cache.get(a.0).unwrap() == a.1));
+        assert!(all.iter().all(|a| lru_cache.check(&a.0) && *lru_cache.get(&a.0).unwrap() == a.1));
     }
 }
