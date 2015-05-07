@@ -1,37 +1,31 @@
 os:
-- linux
-- osx
-sudo: true
+  - linux
+  - osx
+  
 language: rust
+
+sudo: required
+
 rust:
-- beta
-- nightly
-before_install:
-    - sudo apt-get update -qq
-    - sudo apt-get install -qq libcurl4-openssl-dev libelf-dev libdw-dev binutils-dev
-install:
-- wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz
-- tar xzf master.tar.gz
-- mkdir kcov-master/build
-- cd kcov-master/build
-- cmake ..
-- make
-- sudo make install
-- cd ../..
+  - beta
+
+before_script:
+  - |
+      sudo apt-get update -qq &&
+      sudo apt-get install -qq libcurl4-openssl-dev libelf-dev libdw-dev binutils-dev &&
+      pip install 'travis-cargo<0.2' --user &&
+      export PATH=$HOME/.local/bin:$PATH
+
 script:
-- cargo build --verbose
-- cargo test --verbose
-after_success: |
-  [ $TRAVIS_BRANCH = master ] &&
-  [ $TRAVIS_PULL_REQUEST = false ] &&
-  cargo doc &&
-  echo "<meta http-equiv=refresh content=0;url=`echo $TRAVIS_REPO_SLUG | cut -d '/' -f 2`/index.html>" > target/doc/index.html &&
-  sudo pip install ghp-import &&
-  ghp-import -n target/doc &&
-  git push -fq https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages;
-  cargo clean;
-  cargo test --no-run;
-  kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/lru_time_cache-*;
+  - |
+      travis-cargo build &&
+      travis-cargo test &&
+      travis-cargo bench &&
+      travis-cargo --only beta doc
+after_success:
+  - travis-cargo --only beta doc-upload
+  - travis-cargo coveralls
+
 env:
   global:
     secure: XtPUi7NjTC8DRzZngbPuc4YUC5zAsPwgt+VLyHakcmm500fVlPnlk4BxIPunxwhfYAF2QJqHEVP9erKtGmOgCZUI9fIQHUzZpKfl44xFp4WQo77JkIiFWxHetDifRue53Ci89knhfVk/F1V5Ru5NW96WxfHJKm0g8SSn3rdXNOc=
