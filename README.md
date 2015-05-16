@@ -1,5 +1,7 @@
 # lru_time_cache
 
+Primary Maintainer: [Chandra Prakash](prakash@maidsafe.net)
+
 |Crate|Travis|Windows|OSX|Coverage|
 |:------:|:-------:|:-------:|:-------:|:-------:|
 |[![](http://meritbadge.herokuapp.com/lru_time_cache)](https://crates.io/crates/lru_time_cache)|[![Build Status](https://travis-ci.org/maidsafe/lru_time_cache.svg?branch=master)](https://travis-ci.org/maidsafe/lru_time_cache)|[![Build Status](http://ci.maidsafe.net:8080/buildStatus/icon?job=lru_time_cache_win64_status_badge)](http://ci.maidsafe.net:8080/job/lru_time_cache_win64_status_badge/)|[![Build Status](http://ci.maidsafe.net:8080/buildStatus/icon?job=lru_time_cache_osx_status_badge)](http://ci.maidsafe.net:8080/job/lru_time_cache_osx_status_badge/)|[![Coverage Status](https://coveralls.io/repos/maidsafe/lru_time_cache/badge.svg)](https://coveralls.io/r/maidsafe/lru_time_cache)|
