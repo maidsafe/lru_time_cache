@@ -1,6 +1,6 @@
 # lru_time_cache
 
-Primary Maintainer: Chandra Prakash (prakash@maidsafe.net)
+**Primary Maintainer:** Chandra Prakash (prakash@maidsafe.net)
 
 |Crate|Travis|Windows|OSX|Coverage|
 |:------:|:-------:|:-------:|:-------:|:-------:|
