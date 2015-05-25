@@ -117,17 +117,14 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         if self.map.contains_key(&key) {
             Self::update_key(&mut self.list, &key);
-            self.map.insert(key, (value, time::SteadyTime::now())).map(|pair| pair.0)
         } else {
             while self.check_time_expired() || self.map.len() == self.capacity {
                 self.remove_oldest_element();
             }
-
             self.list.push_back(key.clone());
-            self.map.insert(key, (value, time::SteadyTime::now()));
-
-            None
         }
+
+        self.map.insert(key, (value, time::SteadyTime::now())).map(|pair| pair.0)
     }
 
     /// Remove a key/value pair from cache
@@ -200,8 +197,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     }
 
     fn remove_oldest_element(&mut self) {
-        let key = self.list.pop_front().unwrap();
-        self.map.remove(&key).unwrap();
+        self.list.pop_front().map(|key| { assert!(self.map.remove(&key).is_some()) });
     }
 
     fn check_time_expired(&self) -> bool {
