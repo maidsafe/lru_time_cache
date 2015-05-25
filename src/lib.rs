@@ -46,7 +46,7 @@
 extern crate time;
 
 use std::usize;
-use std::collections;
+use std::collections::{BTreeMap, VecDeque};
 
 pub enum Entry<'a, K:'a, V:'a> {
     Vacant(VacantEntry<'a, K, V>),
@@ -64,8 +64,8 @@ pub struct OccupiedEntry<'a, V:'a> {
 
 /// Provides a Last Recently Used caching algorithm in a container which may be limited by size or time, reordered to most recently seen.
 pub struct LruCache<K, V> {
-    map: collections::BTreeMap<K, (V, time::SteadyTime)>,
-    list: collections::VecDeque<K>,
+    map: BTreeMap<K, (V, time::SteadyTime)>,
+    list: VecDeque<K>,
     capacity: usize,
     time_to_live: time::Duration,
 }
@@ -74,8 +74,8 @@ pub struct LruCache<K, V> {
 impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     pub fn with_capacity(capacity: usize) -> LruCache<K, V> {
         LruCache {
-            map: collections::BTreeMap::new(),
-            list: collections::VecDeque::new(),
+            map: BTreeMap::new(),
+            list: VecDeque::new(),
             capacity: capacity,
             time_to_live: time::Duration::max_value(),
         }
@@ -83,8 +83,8 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
 /// Constructor for time based LruCache
     pub fn with_expiry_duration(time_to_live: time::Duration) -> LruCache<K, V> {
         LruCache {
-            map: collections::BTreeMap::new(),
-            list: collections::VecDeque::new(),
+            map: BTreeMap::new(),
+            list: VecDeque::new(),
             capacity: usize::MAX,
             time_to_live: time_to_live,
         }
@@ -92,15 +92,15 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
 /// Constructor for dual feature capacity, or time based LruCache
     pub fn with_expiry_duration_and_capacity(time_to_live: time::Duration, capacity: usize) -> LruCache<K, V> {
         LruCache {
-            map: collections::BTreeMap::new(),
-            list: collections::VecDeque::new(),
+            map: BTreeMap::new(),
+            list: VecDeque::new(),
             capacity: capacity,
             time_to_live: time_to_live,
         }
     }
 
     /// Add a key/value pair to cache
-    // FIXME: Should be renamed to `insert` to reflect API of Rust's Map collections.
+    // FIXME: Should be deprecated in favor of the below `insert` function.
     pub fn add(&mut self, key: K, value: V) {
         if !self.map.contains_key(&key) {
             while self.check_time_expired() || self.map.len() == self.capacity {
@@ -109,6 +109,24 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
 
             self.list.push_back(key.clone());
             self.map.insert(key, (value, time::SteadyTime::now()));
+        }
+    }
+
+    /// Inserts a key-value pair into the cache. If the key already had a value
+    /// present in the cache, that value is returned. Otherwise, `None` is returned.
+    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+        if self.map.contains_key(&key) {
+            Self::update_key(&mut self.list, &key);
+            self.map.insert(key, (value, time::SteadyTime::now())).map(|pair| pair.0)
+        } else {
+            while self.check_time_expired() || self.map.len() == self.capacity {
+                self.remove_oldest_element();
+            }
+
+            self.list.push_back(key.clone());
+            self.map.insert(key, (value, time::SteadyTime::now()));
+
+            None
         }
     }
 
@@ -194,7 +212,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         }
     }
 
-    fn update_key(list: &mut collections::VecDeque<K>, key: &K) {
+    fn update_key(list: &mut VecDeque<K>, key: &K) {
         let pos_in_list = list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
         list.remove(pos_in_list);
         list.push_back(key.clone());
@@ -203,7 +221,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
 
 impl<'a, K: PartialOrd + Ord + Clone, V: Clone> VacantEntry<'a, K, V> {
     pub fn insert(self, value: V) -> &'a mut V {
-        self.cache.add(self.key.clone(), value);
+        self.cache.insert(self.key.clone(), value);
         self.cache.get_mut(&self.key).unwrap()
     }
 }
