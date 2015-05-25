@@ -47,6 +47,21 @@ extern crate time;
 
 use std::usize;
 use std::collections;
+
+pub enum Entry<'a, K:'a, V:'a> {
+    Vacant(VacantEntry<'a, K, V>),
+    Occupied(OccupiedEntry<'a, V>),
+}
+
+pub struct VacantEntry<'a, K:'a, V:'a> {
+    key: K,
+    cache: &'a mut LruCache<K, V>,
+}
+
+pub struct OccupiedEntry<'a, V:'a> {
+    value: &'a mut V,
+}
+
 /// Provides a Last Recently Used caching algorithm in a container which may be limited by size or time, reordered to most recently seen.
 pub struct LruCache<K, V> {
     map: collections::BTreeMap<K, (V, time::SteadyTime)>,
@@ -108,16 +123,21 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     }
 /// Retrieve a value from cache
     pub fn get(&mut self, key: &K) -> Option<&V> {
-       let get_result = self.map.get(key);
+        let list = &mut self.list;
 
-       if get_result.is_some() {
-           let pos_in_list = self.list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
-           self.list.remove(pos_in_list);
-           self.list.push_back(key.clone());
-           Some(&get_result.unwrap().0)
-       } else {
-           None
-       }
+        self.map.get(key).map(|result| {
+            Self::update_key(list, key);
+            &result.0
+        })
+    }
+/// Retrieve a value from cache
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        let list = &mut self.list;
+
+        self.map.get_mut(key).map(|result| {
+            Self::update_key(list, key);
+            &mut result.0
+        })
     }
 /// Check for existence of a key
     pub fn check(&self, key: &K) -> bool {
@@ -137,6 +157,21 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         result
     }
 
+    pub fn entry(&mut self, key: K) -> Entry<K, V> {
+        // We need to do it the ugly way below due to this issue:
+        // https://github.com/rust-lang/rfcs/issues/811
+        //match self.get_mut(&key) {
+        //    Some(value) => Entry::Occupied(OccupiedEntry{value: value}),
+        //    None => Entry::Vacant(VacantEntry{key: key, cache: self}),
+        //}
+        if self.check(&key) {
+            Entry::Occupied(OccupiedEntry{value: self.get_mut(&key).unwrap()})
+        }
+        else {
+            Entry::Vacant(VacantEntry{key: key, cache: self})
+        }
+    }
+
     fn remove_oldest_element(&mut self) {
         let key = self.list.pop_front().unwrap();
         self.map.remove(&key).unwrap();
@@ -147,6 +182,41 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             false
         } else {
             self.map.get(self.list.front().unwrap()).unwrap().1 + self.time_to_live < time::SteadyTime::now()
+        }
+    }
+
+    fn update_key(list: &mut collections::VecDeque<K>, key: &K) {
+        let pos_in_list = list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
+        list.remove(pos_in_list);
+        list.push_back(key.clone());
+    }
+}
+
+impl<'a, K: PartialOrd + Ord + Clone, V: Clone> VacantEntry<'a, K, V> {
+    pub fn insert(self, value: V) -> &'a mut V {
+        self.cache.add(self.key.clone(), value);
+        self.cache.get_mut(&self.key).unwrap()
+    }
+}
+
+impl<'a, V: Clone> OccupiedEntry<'a, V> {
+    pub fn into_mut(self) -> &'a mut V {
+        self.value
+    }
+}
+
+impl<'a, K: PartialOrd + Ord + Clone, V: Clone> Entry<'a, K, V> {
+    pub fn or_insert(self, default: V) -> &'a mut V {
+        match self {
+            Entry::Occupied(entry) => entry.into_mut(),
+            Entry::Vacant(entry) => entry.insert(default),
+        }
+    }
+
+    pub fn or_insert_with<F: FnOnce() -> V>(self, default: F) -> &'a mut V {
+        match self {
+            Entry::Occupied(entry) => entry.into_mut(),
+            Entry::Vacant(entry) => entry.insert(default()),
         }
     }
 }
