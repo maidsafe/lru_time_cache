@@ -98,7 +98,9 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             time_to_live: time_to_live,
         }
     }
-/// Add a key/value pair to cache
+
+    /// Add a key/value pair to cache
+    // FIXME: Should be renamed to `insert` to reflect API of Rust's Map collections.
     pub fn add(&mut self, key: K, value: V) {
         if !self.map.contains_key(&key) {
             while self.check_time_expired() || self.map.len() == self.capacity {
@@ -109,7 +111,8 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             self.map.insert(key, (value, time::SteadyTime::now()));
         }
     }
-/// Remove a key/value pair from cache
+
+    /// Remove a key/value pair from cache
     pub fn remove(&mut self, key: &K)  -> Option<V> {
         let result = self.map.remove(key);
 
@@ -139,15 +142,20 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             &mut result.0
         })
     }
-/// Check for existence of a key
+
+    /// Check for existence of a key
+    // FIXME: Should be renamed to `contains_key` to reflect API of Rust's Map collections.
     pub fn check(&self, key: &K) -> bool {
         self.map.contains_key(key)
     }
-/// Current size of cache
+
+    /// Current size of cache
     pub fn len(&self) -> usize {
         self.map.len()
     }
 
+    // FIXME: We should really just implement the `iter` function for this Cache object,
+    // let the user to clone and collect the elements when needed.
     pub fn retrieve_all(&self) -> Vec<(K, V)> {
         let mut result = Vec::<(K, V)>::with_capacity(self.map.len());
         self.map.iter().all(|a| {
