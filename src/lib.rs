@@ -63,6 +63,7 @@ pub struct OccupiedEntry<'a, V:'a> {
 }
 
 /// Provides a Last Recently Used caching algorithm in a container which may be limited by size or time, reordered to most recently seen.
+#[derive(Clone)]
 pub struct LruCache<K, V> {
     map: BTreeMap<K, (V, time::SteadyTime)>,
     list: VecDeque<K>,
