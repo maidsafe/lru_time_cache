@@ -160,8 +160,12 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     }
 
     /// Check for existence of a key
-    // FIXME: Should be renamed to `contains_key` to reflect API of Rust's Map collections.
+    // FIXME: Deprecated in favor of the `contains_key` function defined below.
     pub fn check(&self, key: &K) -> bool {
+        self.map.contains_key(key)
+    }
+
+    pub fn contains_key(&self, key: &K) -> bool {
         self.map.contains_key(key)
     }
 
