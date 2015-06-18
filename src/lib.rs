@@ -13,7 +13,7 @@
 // KIND, either express or implied.
 //
 // Please review the Licences for the specific language governing permissions and limitations
-// relating to use of the SAFE Network Software.                                                               
+// relating to use of the SAFE Network Software.
 
 #![crate_name = "lru_time_cache"]
 #![crate_type = "lib"]
@@ -21,22 +21,33 @@
        html_favicon_url = "http://maidsafe.net/img/favicon.ico",
               html_root_url = "http://dirvine.github.io/dirvine/lru_time_cache/")]
 
-//!#lru cache limited via size or time  
-//! 
+#![forbid(bad_style, warnings)]
+
+#![deny(deprecated, improper_ctypes, missing_docs, non_shorthand_field_patterns,
+overflowing_literals, plugin_as_library, private_no_mangle_fns, private_no_mangle_statics,
+raw_pointer_derive, stable_features, unconditional_recursion, unknown_lints, unsafe_code,
+unsigned_negation, unused, unused_allocation, unused_attributes, unused_comparisons,
+unused_features, unused_parens, while_true)]
+
+#![warn(trivial_casts, trivial_numeric_casts, unused_extern_crates, unused_import_braces,
+unused_qualifications, variant_size_differences)]
+
+//!#lru cache limited via size or time
+//!
 //! This container allows time or size to be the limiting factor for any key/value types.
 //!
 //!#Use
 //!
-//!##To use as size based LruCache 
+//!##To use as size based LruCache
 //!
 //!`let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);`
 //!
 //!##Or as time based LruCache
-//! 
+//!
 //! `let time_to_live = chrono::duration::Duration::milliseconds(100);`
 //!
 //! `let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);`
-//! 
+//!
 //!##Or as time or size limited cache
 //!
 //! ` let size = 10usize;
@@ -48,16 +59,21 @@ extern crate time;
 use std::usize;
 use std::collections::{BTreeMap, VecDeque};
 
+/// A view into a single entry in a lru_cache, which may either be vacant or occupied.
 pub enum Entry<'a, K:'a, V:'a> {
+    /// A vacant Entry
     Vacant(VacantEntry<'a, K, V>),
+    /// An occupied Entry
     Occupied(OccupiedEntry<'a, V>),
 }
 
+/// A vacant Entry.
 pub struct VacantEntry<'a, K:'a, V:'a> {
     key: K,
     cache: &'a mut LruCache<K, V>,
 }
 
+/// An occupied Entry.
 pub struct OccupiedEntry<'a, V:'a> {
     value: &'a mut V,
 }
@@ -73,6 +89,7 @@ pub struct LruCache<K, V> {
 
 /// Constructor for size (capacity) based LruCache
 impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
+    /// Constructor for size based LruCache
     pub fn with_capacity(capacity: usize) -> LruCache<K, V> {
         LruCache {
             map: BTreeMap::new(),
@@ -81,7 +98,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             time_to_live: time::Duration::max_value(),
         }
     }
-/// Constructor for time based LruCache
+    /// Constructor for time based LruCache
     pub fn with_expiry_duration(time_to_live: time::Duration) -> LruCache<K, V> {
         LruCache {
             map: BTreeMap::new(),
@@ -90,7 +107,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             time_to_live: time_to_live,
         }
     }
-/// Constructor for dual feature capacity, or time based LruCache
+    /// Constructor for dual feature capacity, or time based LruCache
     pub fn with_expiry_duration_and_capacity(time_to_live: time::Duration, capacity: usize) -> LruCache<K, V> {
         LruCache {
             map: BTreeMap::new(),
@@ -140,7 +157,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
            None
         }
     }
-/// Retrieve a value from cache
+    /// Retrieve a value from cache
     pub fn get(&mut self, key: &K) -> Option<&V> {
         let list = &mut self.list;
 
@@ -149,7 +166,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             &result.0
         })
     }
-/// Retrieve a value from cache
+    /// Retrieve a value from cache
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
         let list = &mut self.list;
 
@@ -165,6 +182,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         self.map.contains_key(key)
     }
 
+    /// Returns true if a value existed for the specified key.
     pub fn contains_key(&self, key: &K) -> bool {
         self.map.contains_key(key)
     }
@@ -176,6 +194,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
 
     // FIXME: We should really just implement the `iter` function for this Cache object,
     // let the user to clone and collect the elements when needed.
+    /// Retrieve all elements as a vector of key value tuple.
     pub fn retrieve_all(&self) -> Vec<(K, V)> {
         let mut result = Vec::<(K, V)>::with_capacity(self.map.len());
         self.map.iter().all(|a| {
@@ -221,6 +240,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
 }
 
 impl<'a, K: PartialOrd + Ord + Clone, V: Clone> VacantEntry<'a, K, V> {
+    /// Inserts a value
     pub fn insert(self, value: V) -> &'a mut V {
         self.cache.insert(self.key.clone(), value);
         self.cache.get_mut(&self.key).unwrap()
@@ -228,12 +248,15 @@ impl<'a, K: PartialOrd + Ord + Clone, V: Clone> VacantEntry<'a, K, V> {
 }
 
 impl<'a, V: Clone> OccupiedEntry<'a, V> {
+    /// Converts the entry into a mutable reference to its value.
     pub fn into_mut(self) -> &'a mut V {
         self.value
     }
 }
 
 impl<'a, K: PartialOrd + Ord + Clone, V: Clone> Entry<'a, K, V> {
+    /// Ensures a value is in the entry by inserting the default if empty, and returns
+    /// a mutable reference to the value in the entry.
     pub fn or_insert(self, default: V) -> &'a mut V {
         match self {
             Entry::Occupied(entry) => entry.into_mut(),
@@ -241,6 +264,8 @@ impl<'a, K: PartialOrd + Ord + Clone, V: Clone> Entry<'a, K, V> {
         }
     }
 
+    /// Ensures a value is in the entry by inserting the result of the default function if empty,
+    /// and returns a mutable reference to the value in the entry.
     pub fn or_insert_with<F: FnOnce() -> V>(self, default: F) -> &'a mut V {
         match self {
             Entry::Occupied(entry) => entry.into_mut(),
