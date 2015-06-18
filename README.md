@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/maidsafe/lru_time_cache.png?label=ready&title=Ready)](https://waffle.io/maidsafe/lru_time_cache)
 # Lru Time Cache
 
 **Primary Maintainer:** Chandra Prakash (prakash@maidsafe.net)
