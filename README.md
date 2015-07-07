@@ -16,8 +16,10 @@
 Provides a Last Recently Used [caching algorithm](http://en.wikipedia.org/wiki/Cache_algorithms) in a container which may be limited by size or time, reordered to most recently seen.
 
 #Todo Items
+## [0.2.1] RUST-3 Sprint task
+- [ ] [MAID-1246](https://maidsafe.atlassian.net/browse/MAID-1246) Provide a getter to fetch all key value pairs in order (last updated first).
 
-## [0.2.1] More API changes
+## [0.2.2] More API changes
 - [ ] Implement `iter` function
 - [ ] Remove `retrieve_all` function (in favor of the above)
 - [ ] Remove `add` function (deprecated in favor of the `insert` function from v0.1.6)
