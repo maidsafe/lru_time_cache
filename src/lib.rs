@@ -80,7 +80,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             time_to_live: time::Duration::max_value(),
         }
     }
-/// Constructor for time based LruCache
+    /// Constructor for time based LruCache
     pub fn with_expiry_duration(time_to_live: time::Duration) -> LruCache<K, V> {
         LruCache {
             map: BTreeMap::new(),
@@ -89,7 +89,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             time_to_live: time_to_live,
         }
     }
-/// Constructor for dual feature capacity, or time based LruCache
+    /// Constructor for dual feature capacity, or time based LruCache
     pub fn with_expiry_duration_and_capacity(time_to_live: time::Duration, capacity: usize) -> LruCache<K, V> {
         LruCache {
             map: BTreeMap::new(),
@@ -139,7 +139,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
            None
         }
     }
-/// Retrieve a value from cache
+    /// Retrieve a value from cache
     pub fn get(&mut self, key: &K) -> Option<&V> {
         let list = &mut self.list;
 
@@ -148,7 +148,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             &result.0
         })
     }
-/// Retrieve a value from cache
+    /// Retrieve a value from cache
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
         let list = &mut self.list;
 
@@ -177,6 +177,18 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             result.push((a.0.clone(), a.1 .0.clone()));
             true
         });
+        result
+    }
+
+    // Return a vector of key value pairs ordered by most to least recently updated.
+    pub fn retrieve_all_ordered(&self) -> Vec<(K, V)> {
+        let mut result = Vec::<(K, V)>::with_capacity(self.list.len());
+        for key in self.list.iter().rev() {
+            match self.map.get(key) {
+                Some(value) => result.push((key.clone(), value.0.clone())),
+                None => (),
+            }
+        }
         result
     }
 
@@ -376,5 +388,23 @@ mod test {
         assert_eq!(all.len(), lru_cache.map.len());
 
         assert!(all.iter().all(|a| lru_cache.check(&a.0) && *lru_cache.get(&a.0).unwrap() == a.1));
+    }
+
+    #[test]
+    fn retrieve_all_ordered() {
+        let size = 10usize;
+        let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);
+
+        for i in 0..10 {
+            lru_cache.add(i, i);
+        }
+
+        let all = lru_cache.retrieve_all_ordered();
+        assert_eq!(all.len(), lru_cache.map.len());
+
+        for i in all.iter().rev() {
+            lru_cache.remove_oldest_element();
+            assert!(!lru_cache.check(&i.0) && lru_cache.get(&i.0).is_none());
+        }
     }
 }
