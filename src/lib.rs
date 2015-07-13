@@ -180,7 +180,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         result
     }
 
-    // Return a vector of key value pairs ordered by most to least recently updated.
+    /// Return a vector of key value pairs ordered by most to least recently updated.
     pub fn retrieve_all_ordered(&self) -> Vec<(K, V)> {
         let mut result = Vec::<(K, V)>::with_capacity(self.list.len());
         for key in self.list.iter().rev() {
