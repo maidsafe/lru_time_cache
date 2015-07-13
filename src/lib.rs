@@ -204,6 +204,18 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         result
     }
 
+    /// Return a vector of key value pairs ordered by most to least recently updated.
+    pub fn retrieve_all_ordered(&self) -> Vec<(K, V)> {
+        let mut result = Vec::<(K, V)>::with_capacity(self.list.len());
+        for key in self.list.iter().rev() {
+            match self.map.get(key) {
+                Some(value) => result.push((key.clone(), value.0.clone())),
+                None => (),
+            }
+        }
+        result
+    }
+
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
     pub fn entry(&mut self, key: K) -> Entry<K, V> {
         // We need to do it the ugly way below due to this issue:
@@ -406,5 +418,23 @@ mod test {
         assert_eq!(all.len(), lru_cache.map.len());
 
         assert!(all.iter().all(|a| lru_cache.check(&a.0) && *lru_cache.get(&a.0).unwrap() == a.1));
+    }
+
+    #[test]
+    fn retrieve_all_ordered() {
+        let size = 10usize;
+        let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);
+
+        for i in 0..10 {
+            lru_cache.add(i, i);
+        }
+
+        let all = lru_cache.retrieve_all_ordered();
+        assert_eq!(all.len(), lru_cache.map.len());
+
+        for i in all.iter().rev() {
+            lru_cache.remove_oldest_element();
+            assert!(!lru_cache.check(&i.0) && lru_cache.get(&i.0).is_none());
+        }
     }
 }
