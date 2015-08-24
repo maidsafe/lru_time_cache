@@ -117,19 +117,6 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         }
     }
 
-    /// Add a key/value pair to cache
-    // FIXME: Should be deprecated in favor of the below `insert` function.
-    pub fn add(&mut self, key: K, value: V) {
-        if !self.map.contains_key(&key) {
-            while self.check_time_expired() || self.map.len() == self.capacity {
-                self.remove_oldest_element();
-            }
-
-            self.list.push_back(key.clone());
-            self.map.insert(key, (value, time::SteadyTime::now()));
-        }
-    }
-
     /// Inserts a key-value pair into the cache. If the key already had a value
     /// present in the cache, that value is returned. Otherwise, `None` is returned.
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
@@ -308,12 +295,12 @@ mod test {
 
         for i in 0..10 {
             assert_eq!(lru_cache.len(), i);
-            lru_cache.add(i, i);
+            lru_cache.insert(i, i);
             assert_eq!(lru_cache.len(), i + 1);
         }
 
         for i in 10..1000 {
-            lru_cache.add(i, i);
+            lru_cache.insert(i, i);
             assert_eq!(lru_cache.len(), size);
         }
 
@@ -331,18 +318,18 @@ mod test {
 
         for i in 0..10 {
             assert_eq!(lru_cache.len(), i);
-            lru_cache.add(i, i);
+            lru_cache.insert(i, i);
             assert_eq!(lru_cache.len(), i + 1);
         }
 
         thread::sleep_ms(100);
-        lru_cache.add(11, 11);
+        lru_cache.insert(11, 11);
 
         assert_eq!(lru_cache.len(), 1);
 
         for i in 0..10 {
             assert_eq!(lru_cache.len(), i + 1);
-            lru_cache.add(i, i);
+            lru_cache.insert(i, i);
             assert_eq!(lru_cache.len(), i + 2);
         }
     }
@@ -358,7 +345,7 @@ mod test {
                 assert_eq!(lru_cache.len(), i);
             }
 
-            lru_cache.add(i, i);
+            lru_cache.insert(i, i);
 
             if i < size {
                 assert_eq!(lru_cache.len(), i + 1);
@@ -368,7 +355,7 @@ mod test {
         }
 
         thread::sleep_ms(100);
-        lru_cache.add(1, 1);
+        lru_cache.insert(1, 1);
 
         assert_eq!(lru_cache.len(), 1);
     }
@@ -390,7 +377,7 @@ mod test {
                 assert_eq!(lru_cache.len(), i);
             }
 
-            lru_cache.add(Temp { id: generate_random_vec::<u8>(64), }, i);
+            lru_cache.insert(Temp { id: generate_random_vec::<u8>(64), }, i);
 
             if i < size {
                 assert_eq!(lru_cache.len(), i + 1);
@@ -400,7 +387,7 @@ mod test {
         }
 
         thread::sleep_ms(100);
-        lru_cache.add(Temp { id: generate_random_vec::<u8>(64), }, 1);
+        lru_cache.insert(Temp { id: generate_random_vec::<u8>(64), }, 1);
 
         assert_eq!(lru_cache.len(), 1);
     }
@@ -411,7 +398,7 @@ mod test {
         let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);
 
         for i in 0..10 {
-            lru_cache.add(i, i);
+            lru_cache.insert(i, i);
         }
 
         let all = lru_cache.retrieve_all();
@@ -426,7 +413,7 @@ mod test {
         let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);
 
         for i in 0..10 {
-            lru_cache.add(i, i);
+            lru_cache.insert(i, i);
         }
 
         let all = lru_cache.retrieve_all_ordered();
