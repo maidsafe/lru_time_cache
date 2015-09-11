@@ -60,7 +60,7 @@ use std::usize;
 use std::collections::{BTreeMap, VecDeque};
 
 /// A view into a single entry in a lru_cache, which may either be vacant or occupied.
-pub enum Entry<'a, K:'a, V:'a> {
+pub enum Entry<'a, K: 'a, V: 'a> {
     /// A vacant Entry
     Vacant(VacantEntry<'a, K, V>),
     /// An occupied Entry
@@ -68,17 +68,18 @@ pub enum Entry<'a, K:'a, V:'a> {
 }
 
 /// A vacant Entry.
-pub struct VacantEntry<'a, K:'a, V:'a> {
+pub struct VacantEntry<'a, K: 'a, V: 'a> {
     key: K,
     cache: &'a mut LruCache<K, V>,
 }
 
 /// An occupied Entry.
-pub struct OccupiedEntry<'a, V:'a> {
+pub struct OccupiedEntry<'a, V: 'a> {
     value: &'a mut V,
 }
 
-/// Provides a Last Recently Used caching algorithm in a container which may be limited by size or time, reordered to most recently seen.
+/// Provides a Last Recently Used caching algorithm in a container
+/// which may be limited by size or time, reordered to most recently seen.
 #[derive(Clone)]
 pub struct LruCache<K, V> {
     map: BTreeMap<K, (V, time::SteadyTime)>,
@@ -108,7 +109,9 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         }
     }
     /// Constructor for dual feature capacity, or time based LruCache
-    pub fn with_expiry_duration_and_capacity(time_to_live: time::Duration, capacity: usize) -> LruCache<K, V> {
+    pub fn with_expiry_duration_and_capacity(time_to_live: time::Duration,
+                                             capacity: usize)
+                                             -> LruCache<K, V> {
         LruCache {
             map: BTreeMap::new(),
             list: VecDeque::new(),
@@ -133,15 +136,16 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     }
 
     /// Remove a key/value pair from cache
-    pub fn remove(&mut self, key: &K)  -> Option<V> {
+    pub fn remove(&mut self, key: &K) -> Option<V> {
         let result = self.map.remove(key);
 
         if result.is_some() {
-           let position = self.list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
-           self.list.remove(position);
-           Some(result.unwrap().0)
+            let position =
+                self.list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
+            self.list.remove(position);
+            Some(result.unwrap().0)
         } else {
-           None
+            None
         }
     }
     /// Retrieve a value from cache
@@ -212,10 +216,9 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         //    None => Entry::Vacant(VacantEntry{key: key, cache: self}),
         //}
         if self.check(&key) {
-            Entry::Occupied(OccupiedEntry{value: self.get_mut(&key).unwrap()})
-        }
-        else {
-            Entry::Vacant(VacantEntry{key: key, cache: self})
+            Entry::Occupied(OccupiedEntry { value: self.get_mut(&key).unwrap() })
+        } else {
+            Entry::Vacant(VacantEntry { key: key, cache: self })
         }
     }
 
@@ -227,12 +230,14 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         if self.time_to_live == time::Duration::max_value() || self.map.len() == 0 {
             false
         } else {
-            self.map.get(self.list.front().unwrap()).unwrap().1 + self.time_to_live < time::SteadyTime::now()
+            self.map.get(self.list.front().unwrap()).unwrap().1 + self.time_to_live <
+            time::SteadyTime::now()
         }
     }
 
     fn update_key(list: &mut VecDeque<K>, key: &K) {
-        let pos_in_list = list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
+        let pos_in_list =
+            list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
         list.remove(pos_in_list);
         list.push_back(key.clone());
     }
@@ -280,7 +285,8 @@ mod test {
     use std::thread;
     use super::LruCache;
 
-    fn generate_random_vec<T>(len: usize) -> Vec<T> where T: rand::Rand {
+    fn generate_random_vec<T>(len: usize) -> Vec<T>
+        where T: rand::Rand {
         let mut vec = Vec::<T>::with_capacity(len);
         for _ in 0..len {
             vec.push(rand::random::<T>());
@@ -338,7 +344,8 @@ mod test {
     fn time_and_size() {
         let size = 10usize;
         let time_to_live = time::Duration::milliseconds(100);
-        let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);
+        let mut lru_cache =
+            LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);
 
         for i in 0..1000 {
             if i < size {
@@ -370,7 +377,8 @@ mod test {
             id: Vec<u8>,
         }
 
-        let mut lru_cache = LruCache::<Temp, usize>::with_expiry_duration_and_capacity(time_to_live, size);
+        let mut lru_cache =
+            LruCache::<Temp, usize>::with_expiry_duration_and_capacity(time_to_live, size);
 
         for i in 0..1000 {
             if i < size {
