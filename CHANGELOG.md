@@ -1,5 +1,11 @@
 # Lru Time Cache - Change Log
 
+## [0.2.2]
+- Removes expired values before accessing elements. Removed deprecated check method.
+
+## [0.2.1]
+- Provides a getter to fetch all key value pairs in order.
+- Removed `add` function (deprecated in favor of the `insert` function from v0.1.6)
 
 ## [0.1.7 - 0.2.0]
 - [#21] (https://github.com/maidsafe/lru_time_cache/issues/21) Enforced lint checks

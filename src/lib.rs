@@ -52,12 +52,10 @@ unused_qualifications, variant_size_differences)]
 //!
 //! ` let size = 10usize;
 //!     let time_to_live = chrono::duration::Duration::milliseconds(100);
-//!     let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);`
+//!     let mut lru_cache =
+//!         LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);`
 
 extern crate time;
-
-use std::usize;
-use std::collections::{BTreeMap, VecDeque};
 
 /// A view into a single entry in a lru_cache, which may either be vacant or occupied.
 pub enum Entry<'a, K: 'a, V: 'a> {
@@ -78,12 +76,12 @@ pub struct OccupiedEntry<'a, V: 'a> {
     value: &'a mut V,
 }
 
-/// Provides a Last Recently Used caching algorithm in a container
-/// which may be limited by size or time, reordered to most recently seen.
+/// Provides a Last Recently Used caching algorithm in a container which may be limited by size or
+/// time, reordered to most recently seen.
 #[derive(Clone)]
 pub struct LruCache<K, V> {
-    map: BTreeMap<K, (V, time::SteadyTime)>,
-    list: VecDeque<K>,
+    map: ::std::collections::BTreeMap<K, (V, time::SteadyTime)>,
+    list: ::std::collections::VecDeque<K>,
     capacity: usize,
     time_to_live: time::Duration,
 }
@@ -93,8 +91,8 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     /// Constructor for size based LruCache
     pub fn with_capacity(capacity: usize) -> LruCache<K, V> {
         LruCache {
-            map: BTreeMap::new(),
-            list: VecDeque::new(),
+            map: ::std::collections::BTreeMap::new(),
+            list: ::std::collections::VecDeque::new(),
             capacity: capacity,
             time_to_live: time::Duration::max_value(),
         }
@@ -102,9 +100,9 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     /// Constructor for time based LruCache
     pub fn with_expiry_duration(time_to_live: time::Duration) -> LruCache<K, V> {
         LruCache {
-            map: BTreeMap::new(),
-            list: VecDeque::new(),
-            capacity: usize::MAX,
+            map: ::std::collections::BTreeMap::new(),
+            list: ::std::collections::VecDeque::new(),
+            capacity: ::std::usize::MAX,
             time_to_live: time_to_live,
         }
     }
@@ -113,8 +111,8 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
                                              capacity: usize)
                                              -> LruCache<K, V> {
         LruCache {
-            map: BTreeMap::new(),
-            list: VecDeque::new(),
+            map: ::std::collections::BTreeMap::new(),
+            list: ::std::collections::VecDeque::new(),
             capacity: capacity,
             time_to_live: time_to_live,
         }
@@ -140,8 +138,8 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         let result = self.map.remove(key);
 
         if result.is_some() {
-            let position =
-                self.list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
+            let position = self.list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key))
+                              .unwrap().0;
             self.list.remove(position);
             Some(result.unwrap().0)
         } else {
@@ -150,6 +148,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     }
     /// Retrieve a value from cache
     pub fn get(&mut self, key: &K) -> Option<&V> {
+        self.remove_expired();
         let list = &mut self.list;
 
         self.map.get(key).map(|result| {
@@ -159,6 +158,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     }
     /// Retrieve a value from cache
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        self.remove_expired();
         let list = &mut self.list;
 
         self.map.get_mut(key).map(|result| {
@@ -167,26 +167,23 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         })
     }
 
-    /// Check for existence of a key
-    // FIXME: Deprecated in favor of the `contains_key` function defined below.
-    pub fn check(&self, key: &K) -> bool {
-        self.map.contains_key(key)
-    }
-
     /// Returns true if a value existed for the specified key.
-    pub fn contains_key(&self, key: &K) -> bool {
+    pub fn contains_key(&mut self, key: &K) -> bool {
+        self.remove_expired();
         self.map.contains_key(key)
     }
 
     /// Current size of cache
-    pub fn len(&self) -> usize {
+    pub fn len(&mut self) -> usize {
+        self.remove_expired();
         self.map.len()
     }
 
     // FIXME: We should really just implement the `iter` function for this Cache object,
     // let the user to clone and collect the elements when needed.
     /// Retrieve all elements as a vector of key value tuple.
-    pub fn retrieve_all(&self) -> Vec<(K, V)> {
+    pub fn retrieve_all(&mut self) -> Vec<(K, V)> {
+        self.remove_expired();
         let mut result = Vec::<(K, V)>::with_capacity(self.map.len());
         self.map.iter().all(|a| {
             result.push((a.0.clone(), a.1 .0.clone()));
@@ -196,7 +193,8 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     }
 
     /// Return a vector of key value pairs ordered by most to least recently updated.
-    pub fn retrieve_all_ordered(&self) -> Vec<(K, V)> {
+    pub fn retrieve_all_ordered(&mut self) -> Vec<(K, V)> {
+        self.remove_expired();
         let mut result = Vec::<(K, V)>::with_capacity(self.list.len());
         for key in self.list.iter().rev() {
             match self.map.get(key) {
@@ -215,7 +213,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         //    Some(value) => Entry::Occupied(OccupiedEntry{value: value}),
         //    None => Entry::Vacant(VacantEntry{key: key, cache: self}),
         //}
-        if self.check(&key) {
+        if self.contains_key(&key) {
             Entry::Occupied(OccupiedEntry { value: self.get_mut(&key).unwrap() })
         } else {
             Entry::Vacant(VacantEntry { key: key, cache: self })
@@ -235,11 +233,16 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         }
     }
 
-    fn update_key(list: &mut VecDeque<K>, key: &K) {
-        let pos_in_list =
-            list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
-        list.remove(pos_in_list);
+    fn update_key(list: &mut ::std::collections::VecDeque<K>, key: &K) {
+        let position = list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
+        list.remove(position);
         list.push_back(key.clone());
+    }
+
+    fn remove_expired(&mut self) {
+        while self.check_time_expired() {
+            self.remove_oldest_element();
+        }
     }
 }
 
@@ -311,7 +314,7 @@ mod test {
         }
 
         for _ in (0..1000).rev() {
-            assert!(lru_cache.check(&(1000 - 1)));
+            assert!(lru_cache.contains_key(&(1000 - 1)));
             assert!(lru_cache.get(&(1000 - 1)).is_some());
             assert_eq!(*lru_cache.get(&(1000 - 1)).unwrap(), 1000 - 1);
         }
@@ -338,6 +341,21 @@ mod test {
             lru_cache.insert(i, i);
             assert_eq!(lru_cache.len(), i + 2);
         }
+    }
+
+    #[test]
+    fn time_only_check() {
+        let time_to_live = time::Duration::milliseconds(50);
+        let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+
+        assert_eq!(lru_cache.len(), 0);
+        lru_cache.insert(0, 0);
+        assert_eq!(lru_cache.len(), 1);
+
+        thread::sleep_ms(100);
+
+        assert!(!lru_cache.contains_key(&0));
+        assert_eq!(lru_cache.len(), 0);
     }
 
     #[test]
@@ -412,7 +430,8 @@ mod test {
         let all = lru_cache.retrieve_all();
         assert_eq!(all.len(), lru_cache.map.len());
 
-        assert!(all.iter().all(|a| lru_cache.check(&a.0) && *lru_cache.get(&a.0).unwrap() == a.1));
+        assert!(all.iter().all(|a|
+            lru_cache.contains_key(&a.0) && *lru_cache.get(&a.0).unwrap() == a.1));
     }
 
     #[test]
@@ -429,7 +448,7 @@ mod test {
 
         for i in all.iter().rev() {
             lru_cache.remove_oldest_element();
-            assert!(!lru_cache.check(&i.0) && lru_cache.get(&i.0).is_none());
+            assert!(!lru_cache.contains_key(&i.0) && lru_cache.get(&i.0).is_none());
         }
     }
 }
