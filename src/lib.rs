@@ -15,46 +15,111 @@
 // Please review the Licences for the specific language governing permissions and limitations
 // relating to use of the SAFE Network Software.
 
-#![crate_name = "lru_time_cache"]
-#![crate_type = "lib"]
-#![doc(html_logo_url = "https://raw.githubusercontent.com/maidsafe/QA/master/Images/maidsafe_logo.png",
+//! # Least Recently Used (LRU) Cache
+//!
+//! Implementation of a Least Recently Used
+//! [caching algorithm](http://en.wikipedia.org/wiki/Cache_algorithms) in a container which may be
+//! limited by size or time, ordered by most recently seen.
+//!
+//! # Examples
+//!
+//! ```
+//! extern crate lru_time_cache;
+//! extern crate time;
+//! use ::lru_time_cache::LruCache;
+//!
+//! # fn main() {
+//! // Construct an `LruCache` of `<u8, String>`s, limited by key count
+//! let max_count = 10;
+//! let lru_cache = LruCache::<u8, String>::with_capacity(max_count);
+//!
+//! // Construct an `LruCache` of `<String, i64>`s, limited by expiry time
+//! let time_to_live = ::time::Duration::milliseconds(100);
+//! let lru_cache = LruCache::<String, i64>::with_expiry_duration(time_to_live);
+//!
+//! // Construct an `LruCache` of `<u64, Vec<u8>>`s, limited by key count and expiry time
+//! let lru_cache = LruCache::<u64, Vec<u8>>::with_expiry_duration_and_capacity(time_to_live,
+//!                                                                             max_count);
+//! # }
+//! ```
+
+#![doc(html_logo_url =
+           "https://raw.githubusercontent.com/maidsafe/QA/master/Images/maidsafe_logo.png",
        html_favicon_url = "http://maidsafe.net/img/favicon.ico",
-              html_root_url = "http://dirvine.github.io/dirvine/lru_time_cache/")]
+       html_root_url = "http://maidsafe.github.io/lru_time_cache")]
 
-#![forbid(bad_style, warnings)]
+#![forbid(
+    bad_style,              // Includes:
+                            // - non_camel_case_types:   types, variants, traits and type parameters
+                            //                           should have camel case names,
+                            // - non_snake_case:         methods, functions, lifetime parameters and
+                            //                           modules should have snake case names
+                            // - non_upper_case_globals: static constants should have uppercase
+                            //                           identifiers
+    exceeding_bitshifts,    // shift exceeds the type's number of bits
+    mutable_transmutes,     // mutating transmuted &mut T from &T may cause undefined behavior
+    no_mangle_const_items,  // const items will not have their symbols exported
+    unknown_crate_types,    // unknown crate type found in #[crate_type] directive
+    warnings                // mass-change the level for lints which produce warnings
+    )]
 
-#![deny(deprecated, improper_ctypes, missing_docs, non_shorthand_field_patterns,
-overflowing_literals, plugin_as_library, private_no_mangle_fns, private_no_mangle_statics,
-raw_pointer_derive, stable_features, unconditional_recursion, unknown_lints, unsafe_code,
-unused, unused_allocation, unused_attributes, unused_comparisons, unused_features,
-unused_parens, while_true)]
+#![deny(
+    deprecated,                    // detects use of #[deprecated] items
+    drop_with_repr_extern,         // use of #[repr(C)] on a type that implements Drop
+    improper_ctypes,               // proper use of libc types in foreign modules
+    missing_docs,                  // detects missing documentation for public members
+    non_shorthand_field_patterns,  // using `Struct { x: x }` instead of `Struct { x }`
+    overflowing_literals,          // literal out of range for its type
+    plugin_as_library,             // compiler plugin used as ordinary library in non-plugin crate
+    private_no_mangle_fns,         // functions marked #[no_mangle] should be exported
+    private_no_mangle_statics,     // statics marked #[no_mangle] should be exported
+    raw_pointer_derive,            // uses of #[derive] with raw pointers are rarely correct
+    stable_features,               // stable features found in #[feature] directive
+    unconditional_recursion,       // functions that cannot return without calling themselves
+    unknown_lints,                 // unrecognized lint attribute
+    unsafe_code,                   // usage of `unsafe` code
+    unused,                        // Includes:
+                                   // - unused_imports:     imports that are never used
+                                   // - unused_variables:   detect variables which are not used in
+                                   //                       any way
+                                   // - unused_assignments: detect assignments that will never be
+                                   //                       read
+                                   // - dead_code:          detect unused, unexported items
+                                   // - unused_mut:         detect mut variables which don't need to
+                                   //                       be mutable
+                                   // - unreachable_code:   detects unreachable code paths
+                                   // - unused_must_use:    unused result of a type flagged as
+                                   //                       #[must_use]
+                                   // - unused_unsafe:      unnecessary use of an `unsafe` block
+                                   // - path_statements: path statements with no effect
+    unused_allocation,             // detects unnecessary allocations that can be eliminated
+    unused_attributes,             // detects attributes that were not used by the compiler
+    unused_comparisons,            // comparisons made useless by limits of the types involved
+    unused_features,               // unused or unknown features found in crate-level #[feature]
+                                   // directives
+    unused_parens,                 // `if`, `match`, `while` and `return` do not need parentheses
+    while_true                     // suggest using `loop { }` instead of `while true { }`
+    )]
 
-#![warn(trivial_casts, trivial_numeric_casts, unused_extern_crates, unused_import_braces,
-unused_qualifications, variant_size_differences)]
+#![warn(
+    trivial_casts,            // detects trivial casts which could be removed
+    trivial_numeric_casts,    // detects trivial casts of numeric types which could be removed
+    unused_extern_crates,     // extern crates that are never used
+    unused_import_braces,     // unnecessary braces around an imported item
+    unused_qualifications,    // detects unnecessarily qualified names
+    unused_results,           // unused result of an expression in a statement
+    variant_size_differences  // detects enums with widely varying variant sizes
+    )]
 
-//!#lru cache limited via size or time
-//!
-//! This container allows time or size to be the limiting factor for any key/value types.
-//!
-//!#Use
-//!
-//!##To use as size based LruCache
-//!
-//!`let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);`
-//!
-//!##Or as time based LruCache
-//!
-//! `let time_to_live = chrono::duration::Duration::milliseconds(100);`
-//!
-//! `let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);`
-//!
-//!##Or as time or size limited cache
-//!
-//! ` let size = 10usize;
-//!     let time_to_live = chrono::duration::Duration::milliseconds(100);
-//!     let mut lru_cache =
-//!         LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);`
+#![allow(
+    box_pointers,                  // use of owned (Box type) heap memory
+    fat_ptr_transmutes,            // detects transmutes of fat pointers
+    missing_copy_implementations,  // detects potentially-forgotten implementations of `Copy`
+    missing_debug_implementations  // detects missing implementations of fmt::Debug
+    )]
 
+#[cfg(test)]
+extern crate rand;
 extern crate time;
 
 /// A view into a single entry in a lru_cache, which may either be vacant or occupied.
@@ -140,7 +205,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         if result.is_some() {
             let position = self.list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key))
                               .unwrap().0;
-            self.list.remove(position);
+            let _ = self.list.remove(position);
             Some(result.unwrap().0)
         } else {
             None
@@ -221,7 +286,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     }
 
     fn remove_oldest_element(&mut self) {
-        self.list.pop_front().map(|key| { assert!(self.map.remove(&key).is_some()) });
+        let _ = self.list.pop_front().map(|key| { assert!(self.map.remove(&key).is_some()) });
     }
 
     fn check_time_expired(&self) -> bool {
@@ -235,7 +300,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
 
     fn update_key(list: &mut ::std::collections::VecDeque<K>, key: &K) {
         let position = list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
-        list.remove(position);
+        let _ = list.remove(position);
         list.push_back(key.clone());
     }
 
@@ -249,7 +314,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
 impl<'a, K: PartialOrd + Ord + Clone, V: Clone> VacantEntry<'a, K, V> {
     /// Inserts a value
     pub fn insert(self, value: V) -> &'a mut V {
-        self.cache.insert(self.key.clone(), value);
+        let _ = self.cache.insert(self.key.clone(), value);
         self.cache.get_mut(&self.key).unwrap()
     }
 }
@@ -284,15 +349,14 @@ impl<'a, K: PartialOrd + Ord + Clone, V: Clone> Entry<'a, K, V> {
 #[cfg(test)]
 mod test {
     use time;
-    extern crate rand;
     use std::thread;
     use super::LruCache;
 
     fn generate_random_vec<T>(len: usize) -> Vec<T>
-        where T: rand::Rand {
+        where T: ::rand::Rand {
         let mut vec = Vec::<T>::with_capacity(len);
         for _ in 0..len {
-            vec.push(rand::random::<T>());
+            vec.push(::rand::random::<T>());
         }
         vec
     }
@@ -304,12 +368,12 @@ mod test {
 
         for i in 0..10 {
             assert_eq!(lru_cache.len(), i);
-            lru_cache.insert(i, i);
+            let _ = lru_cache.insert(i, i);
             assert_eq!(lru_cache.len(), i + 1);
         }
 
         for i in 10..1000 {
-            lru_cache.insert(i, i);
+            let _ = lru_cache.insert(i, i);
             assert_eq!(lru_cache.len(), size);
         }
 
@@ -327,18 +391,18 @@ mod test {
 
         for i in 0..10 {
             assert_eq!(lru_cache.len(), i);
-            lru_cache.insert(i, i);
+            let _ = lru_cache.insert(i, i);
             assert_eq!(lru_cache.len(), i + 1);
         }
 
         thread::sleep_ms(100);
-        lru_cache.insert(11, 11);
+        let _ = lru_cache.insert(11, 11);
 
         assert_eq!(lru_cache.len(), 1);
 
         for i in 0..10 {
             assert_eq!(lru_cache.len(), i + 1);
-            lru_cache.insert(i, i);
+            let _ = lru_cache.insert(i, i);
             assert_eq!(lru_cache.len(), i + 2);
         }
     }
@@ -349,7 +413,7 @@ mod test {
         let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
         assert_eq!(lru_cache.len(), 0);
-        lru_cache.insert(0, 0);
+        let _ = lru_cache.insert(0, 0);
         assert_eq!(lru_cache.len(), 1);
 
         thread::sleep_ms(100);
@@ -370,7 +434,7 @@ mod test {
                 assert_eq!(lru_cache.len(), i);
             }
 
-            lru_cache.insert(i, i);
+            let _ = lru_cache.insert(i, i);
 
             if i < size {
                 assert_eq!(lru_cache.len(), i + 1);
@@ -380,7 +444,7 @@ mod test {
         }
 
         thread::sleep_ms(100);
-        lru_cache.insert(1, 1);
+        let _ = lru_cache.insert(1, 1);
 
         assert_eq!(lru_cache.len(), 1);
     }
@@ -403,7 +467,7 @@ mod test {
                 assert_eq!(lru_cache.len(), i);
             }
 
-            lru_cache.insert(Temp { id: generate_random_vec::<u8>(64), }, i);
+            let _ = lru_cache.insert(Temp { id: generate_random_vec::<u8>(64), }, i);
 
             if i < size {
                 assert_eq!(lru_cache.len(), i + 1);
@@ -413,7 +477,7 @@ mod test {
         }
 
         thread::sleep_ms(100);
-        lru_cache.insert(Temp { id: generate_random_vec::<u8>(64), }, 1);
+        let _ = lru_cache.insert(Temp { id: generate_random_vec::<u8>(64), }, 1);
 
         assert_eq!(lru_cache.len(), 1);
     }
@@ -424,7 +488,7 @@ mod test {
         let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);
 
         for i in 0..10 {
-            lru_cache.insert(i, i);
+            let _ = lru_cache.insert(i, i);
         }
 
         let all = lru_cache.retrieve_all();
@@ -440,7 +504,7 @@ mod test {
         let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);
 
         for i in 0..10 {
-            lru_cache.insert(i, i);
+            let _ = lru_cache.insert(i, i);
         }
 
         let all = lru_cache.retrieve_all_ordered();
