@@ -357,10 +357,6 @@ impl<'a, K: PartialOrd + Ord + Clone, V: Clone> Entry<'a, K, V> {
 
 #[cfg(test)]
 mod test {
-    use time;
-    use std::thread;
-    use super::LruCache;
-
     fn generate_random_vec<T>(len: usize) -> Vec<T>
         where T: ::rand::Rand {
         let mut vec = Vec::<T>::with_capacity(len);
@@ -373,7 +369,7 @@ mod test {
     #[test]
     fn size_only() {
         let size = 10usize;
-        let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);
+        let mut lru_cache = super::LruCache::<usize, usize>::with_capacity(size);
 
         for i in 0..10 {
             assert_eq!(lru_cache.len(), i);
@@ -395,8 +391,8 @@ mod test {
 
     #[test]
     fn time_only() {
-        let time_to_live = time::Duration::milliseconds(100);
-        let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+        let time_to_live = ::time::Duration::milliseconds(100);
+        let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
         for i in 0..10 {
             assert_eq!(lru_cache.len(), i);
@@ -404,7 +400,7 @@ mod test {
             assert_eq!(lru_cache.len(), i + 1);
         }
 
-        thread::sleep_ms(100);
+        ::std::thread::sleep_ms(100);
         let _ = lru_cache.insert(11, 11);
 
         assert_eq!(lru_cache.len(), 1);
@@ -418,14 +414,14 @@ mod test {
 
     #[test]
     fn time_only_check() {
-        let time_to_live = time::Duration::milliseconds(50);
-        let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+        let time_to_live = ::time::Duration::milliseconds(50);
+        let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
         assert_eq!(lru_cache.len(), 0);
         let _ = lru_cache.insert(0, 0);
         assert_eq!(lru_cache.len(), 1);
 
-        thread::sleep_ms(100);
+        ::std::thread::sleep_ms(100);
 
         assert!(!lru_cache.contains_key(&0));
         assert_eq!(lru_cache.len(), 0);
@@ -434,9 +430,9 @@ mod test {
     #[test]
     fn time_and_size() {
         let size = 10usize;
-        let time_to_live = time::Duration::milliseconds(100);
+        let time_to_live = ::time::Duration::milliseconds(100);
         let mut lru_cache =
-            LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);
+            super::LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);
 
         for i in 0..1000 {
             if i < size {
@@ -452,7 +448,7 @@ mod test {
             }
         }
 
-        thread::sleep_ms(100);
+        ::std::thread::sleep_ms(100);
         let _ = lru_cache.insert(1, 1);
 
         assert_eq!(lru_cache.len(), 1);
@@ -461,7 +457,7 @@ mod test {
     #[test]
     fn time_size_struct_value() {
         let size = 100usize;
-        let time_to_live = time::Duration::milliseconds(100);
+        let time_to_live = ::time::Duration::milliseconds(100);
 
         #[derive(PartialEq, PartialOrd, Ord, Clone, Eq)]
         struct Temp {
@@ -469,7 +465,7 @@ mod test {
         }
 
         let mut lru_cache =
-            LruCache::<Temp, usize>::with_expiry_duration_and_capacity(time_to_live, size);
+            super::LruCache::<Temp, usize>::with_expiry_duration_and_capacity(time_to_live, size);
 
         for i in 0..1000 {
             if i < size {
@@ -485,7 +481,7 @@ mod test {
             }
         }
 
-        thread::sleep_ms(100);
+        ::std::thread::sleep_ms(100);
         let _ = lru_cache.insert(Temp { id: generate_random_vec::<u8>(64), }, 1);
 
         assert_eq!(lru_cache.len(), 1);
@@ -494,7 +490,7 @@ mod test {
     #[test]
     fn retrieve_all() {
         let size = 10usize;
-        let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);
+        let mut lru_cache = super::LruCache::<usize, usize>::with_capacity(size);
 
         for i in 0..10 {
             let _ = lru_cache.insert(i, i);
@@ -510,7 +506,7 @@ mod test {
     #[test]
     fn retrieve_all_ordered() {
         let size = 10usize;
-        let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);
+        let mut lru_cache = super::LruCache::<usize, usize>::with_capacity(size);
 
         for i in 0..10 {
             let _ = lru_cache.insert(i, i);
