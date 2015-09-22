@@ -123,36 +123,36 @@ extern crate rand;
 extern crate time;
 
 /// A view into a single entry in an LRU cache, which may either be vacant or occupied.
-pub enum Entry<'a, K: 'a, V: 'a> {
+pub enum Entry<'a, Key: 'a, Value: 'a> {
     /// A vacant Entry
-    Vacant(VacantEntry<'a, K, V>),
+    Vacant(VacantEntry<'a, Key, Value>),
     /// An occupied Entry
-    Occupied(OccupiedEntry<'a, V>),
+    Occupied(OccupiedEntry<'a, Value>),
 }
 
 /// A vacant Entry.
-pub struct VacantEntry<'a, K: 'a, V: 'a> {
-    key: K,
-    cache: &'a mut LruCache<K, V>,
+pub struct VacantEntry<'a, Key: 'a, Value: 'a> {
+    key: Key,
+    cache: &'a mut LruCache<Key, Value>,
 }
 
 /// An occupied Entry.
-pub struct OccupiedEntry<'a, V: 'a> {
-    value: &'a mut V,
+pub struct OccupiedEntry<'a, Value: 'a> {
+    value: &'a mut Value,
 }
 
 /// Implementation of [LRU cache](index.html#least-recently-used-lru-cache).
 #[derive(Clone)]
-pub struct LruCache<K, V> {
-    map: ::std::collections::BTreeMap<K, (V, time::SteadyTime)>,
-    list: ::std::collections::VecDeque<K>,
+pub struct LruCache<Key, Value> {
+    map: ::std::collections::BTreeMap<Key, (Value, time::SteadyTime)>,
+    list: ::std::collections::VecDeque<Key>,
     capacity: usize,
     time_to_live: time::Duration,
 }
 
-impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
+impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone, Value: Clone {
     /// Constructor for capacity based `LruCache`.
-    pub fn with_capacity(capacity: usize) -> LruCache<K, V> {
+    pub fn with_capacity(capacity: usize) -> LruCache<Key, Value> {
         LruCache {
             map: ::std::collections::BTreeMap::new(),
             list: ::std::collections::VecDeque::new(),
@@ -162,7 +162,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     }
 
     /// Constructor for time based `LruCache`.
-    pub fn with_expiry_duration(time_to_live: time::Duration) -> LruCache<K, V> {
+    pub fn with_expiry_duration(time_to_live: time::Duration) -> LruCache<Key, Value> {
         LruCache {
             map: ::std::collections::BTreeMap::new(),
             list: ::std::collections::VecDeque::new(),
@@ -174,7 +174,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     /// Constructor for dual-feature capacity and time based `LruCache`.
     pub fn with_expiry_duration_and_capacity(time_to_live: time::Duration,
                                              capacity: usize)
-                                             -> LruCache<K, V> {
+                                             -> LruCache<Key, Value> {
         LruCache {
             map: ::std::collections::BTreeMap::new(),
             list: ::std::collections::VecDeque::new(),
@@ -187,7 +187,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     ///
     /// If the key already existed in the cache, the existing value is returned and overwritten in
     /// the cache.  Otherwise, the key-value pair is inserted and `None` is returned.
-    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+    pub fn insert(&mut self, key: Key, value: Value) -> Option<Value> {
         if self.map.contains_key(&key) {
             Self::update_key(&mut self.list, &key);
         } else {
@@ -201,7 +201,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     }
 
     /// Removes a key-value pair from the cache.
-    pub fn remove(&mut self, key: &K) -> Option<V> {
+    pub fn remove(&mut self, key: &Key) -> Option<Value> {
         let result = self.map.remove(key);
 
         if result.is_some() {
@@ -216,7 +216,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
 
     /// Retrieves a reference to the value stored under `key`, or `None` if the key doesn't exist.
     /// Also removes expired elements.
-    pub fn get(&mut self, key: &K) -> Option<&V> {
+    pub fn get(&mut self, key: &Key) -> Option<&Value> {
         self.remove_expired();
         let list = &mut self.list;
 
@@ -228,7 +228,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
 
     /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
     /// exist.  Also removes expired elements.
-    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+    pub fn get_mut(&mut self, key: &Key) -> Option<&mut Value> {
         self.remove_expired();
         let list = &mut self.list;
 
@@ -239,7 +239,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     }
 
     /// Returns whether `key` exists in the cache or not.  Also removes expired elements.
-    pub fn contains_key(&mut self, key: &K) -> bool {
+    pub fn contains_key(&mut self, key: &Key) -> bool {
         self.remove_expired();
         self.map.contains_key(key)
     }
@@ -255,9 +255,9 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     /// expired elements.
     // FIXME: We should really just implement the `iter` function for this Cache object, let the
     // user clone and collect the elements when needed.
-    pub fn retrieve_all(&mut self) -> Vec<(K, V)> {
+    pub fn retrieve_all(&mut self) -> Vec<(Key, Value)> {
         self.remove_expired();
-        let mut result = Vec::<(K, V)>::with_capacity(self.map.len());
+        let mut result = Vec::<(Key, Value)>::with_capacity(self.map.len());
         self.map.iter().all(|a| {
             result.push((a.0.clone(), a.1 .0.clone()));
             true
@@ -267,9 +267,9 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
 
     /// Returns a clone of all elements as a vector of key-value tuples ordered by most to least
     /// recently updated.  Also removes expired elements.
-    pub fn retrieve_all_ordered(&mut self) -> Vec<(K, V)> {
+    pub fn retrieve_all_ordered(&mut self) -> Vec<(Key, Value)> {
         self.remove_expired();
-        let mut result = Vec::<(K, V)>::with_capacity(self.list.len());
+        let mut result = Vec::<(Key, Value)>::with_capacity(self.list.len());
         for key in self.list.iter().rev() {
             match self.map.get(key) {
                 Some(value) => result.push((key.clone(), value.0.clone())),
@@ -280,7 +280,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     }
 
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
-    pub fn entry(&mut self, key: K) -> Entry<K, V> {
+    pub fn entry(&mut self, key: Key) -> Entry<Key, Value> {
         // We need to do it the ugly way below due to this issue:
         // https://github.com/rust-lang/rfcs/issues/811
         //match self.get_mut(&key) {
@@ -307,7 +307,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         }
     }
 
-    fn update_key(list: &mut ::std::collections::VecDeque<K>, key: &K) {
+    fn update_key(list: &mut ::std::collections::VecDeque<Key>, key: &Key) {
         let position = list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
         let _ = list.remove(position);
         list.push_back(key.clone());
@@ -320,25 +320,25 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
     }
 }
 
-impl<'a, K: PartialOrd + Ord + Clone, V: Clone> VacantEntry<'a, K, V> {
+impl<'a, Key: PartialOrd + Ord + Clone, Value: Clone> VacantEntry<'a, Key, Value> {
     /// Inserts a value
-    pub fn insert(self, value: V) -> &'a mut V {
+    pub fn insert(self, value: Value) -> &'a mut Value {
         let _ = self.cache.insert(self.key.clone(), value);
         self.cache.get_mut(&self.key).unwrap()
     }
 }
 
-impl<'a, V: Clone> OccupiedEntry<'a, V> {
+impl<'a, Value: Clone> OccupiedEntry<'a, Value> {
     /// Converts the entry into a mutable reference to its value.
-    pub fn into_mut(self) -> &'a mut V {
+    pub fn into_mut(self) -> &'a mut Value {
         self.value
     }
 }
 
-impl<'a, K: PartialOrd + Ord + Clone, V: Clone> Entry<'a, K, V> {
+impl<'a, Key: PartialOrd + Ord + Clone, Value: Clone> Entry<'a, Key, Value> {
     /// Ensures a value is in the entry by inserting the default if empty, and returns
     /// a mutable reference to the value in the entry.
-    pub fn or_insert(self, default: V) -> &'a mut V {
+    pub fn or_insert(self, default: Value) -> &'a mut Value {
         match self {
             Entry::Occupied(entry) => entry.into_mut(),
             Entry::Vacant(entry) => entry.insert(default),
@@ -347,7 +347,7 @@ impl<'a, K: PartialOrd + Ord + Clone, V: Clone> Entry<'a, K, V> {
 
     /// Ensures a value is in the entry by inserting the result of the default function if empty,
     /// and returns a mutable reference to the value in the entry.
-    pub fn or_insert_with<F: FnOnce() -> V>(self, default: F) -> &'a mut V {
+    pub fn or_insert_with<F: FnOnce() -> Value>(self, default: F) -> &'a mut Value {
         match self {
             Entry::Occupied(entry) => entry.into_mut(),
             Entry::Vacant(entry) => entry.insert(default()),
