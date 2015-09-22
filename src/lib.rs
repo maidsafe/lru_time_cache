@@ -122,7 +122,7 @@
 extern crate rand;
 extern crate time;
 
-/// A view into a single entry in a lru_cache, which may either be vacant or occupied.
+/// A view into a single entry in an LRU cache, which may either be vacant or occupied.
 pub enum Entry<'a, K: 'a, V: 'a> {
     /// A vacant Entry
     Vacant(VacantEntry<'a, K, V>),
@@ -141,8 +141,7 @@ pub struct OccupiedEntry<'a, V: 'a> {
     value: &'a mut V,
 }
 
-/// Provides a Last Recently Used caching algorithm in a container which may be limited by size or
-/// time, reordered to most recently seen.
+/// Implementation of [LRU cache](index.html#least-recently-used-lru-cache).
 #[derive(Clone)]
 pub struct LruCache<K, V> {
     map: ::std::collections::BTreeMap<K, (V, time::SteadyTime)>,
@@ -151,9 +150,8 @@ pub struct LruCache<K, V> {
     time_to_live: time::Duration,
 }
 
-/// Constructor for size (capacity) based LruCache
 impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
-    /// Constructor for size based LruCache
+    /// Constructor for capacity based `LruCache`.
     pub fn with_capacity(capacity: usize) -> LruCache<K, V> {
         LruCache {
             map: ::std::collections::BTreeMap::new(),
@@ -162,7 +160,8 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             time_to_live: time::Duration::max_value(),
         }
     }
-    /// Constructor for time based LruCache
+
+    /// Constructor for time based `LruCache`.
     pub fn with_expiry_duration(time_to_live: time::Duration) -> LruCache<K, V> {
         LruCache {
             map: ::std::collections::BTreeMap::new(),
@@ -171,7 +170,8 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             time_to_live: time_to_live,
         }
     }
-    /// Constructor for dual feature capacity, or time based LruCache
+
+    /// Constructor for dual-feature capacity and time based `LruCache`.
     pub fn with_expiry_duration_and_capacity(time_to_live: time::Duration,
                                              capacity: usize)
                                              -> LruCache<K, V> {
@@ -183,8 +183,10 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         }
     }
 
-    /// Inserts a key-value pair into the cache. If the key already had a value
-    /// present in the cache, that value is returned. Otherwise, `None` is returned.
+    /// Inserts a key-value pair into the cache.
+    ///
+    /// If the key already existed in the cache, the existing value is returned and overwritten in
+    /// the cache.  Otherwise, the key-value pair is inserted and `None` is returned.
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         if self.map.contains_key(&key) {
             Self::update_key(&mut self.list, &key);
@@ -198,7 +200,7 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         self.map.insert(key, (value, time::SteadyTime::now())).map(|pair| pair.0)
     }
 
-    /// Remove a key/value pair from cache
+    /// Removes a key-value pair from the cache.
     pub fn remove(&mut self, key: &K) -> Option<V> {
         let result = self.map.remove(key);
 
@@ -211,7 +213,9 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             None
         }
     }
-    /// Retrieve a value from cache
+
+    /// Retrieves a reference to the value stored under `key`, or `None` if the key doesn't exist.
+    /// Also removes expired elements.
     pub fn get(&mut self, key: &K) -> Option<&V> {
         self.remove_expired();
         let list = &mut self.list;
@@ -221,7 +225,9 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
             &result.0
         })
     }
-    /// Retrieve a value from cache
+
+    /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
+    /// exist.  Also removes expired elements.
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
         self.remove_expired();
         let list = &mut self.list;
@@ -232,21 +238,23 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         })
     }
 
-    /// Returns true if a value existed for the specified key.
+    /// Returns whether `key` exists in the cache or not.  Also removes expired elements.
     pub fn contains_key(&mut self, key: &K) -> bool {
         self.remove_expired();
         self.map.contains_key(key)
     }
 
-    /// Current size of cache
+    /// Returns the size of the cache, i.e. the number of cached key-value pairs.  Also removes
+    /// expired elements.
     pub fn len(&mut self) -> usize {
         self.remove_expired();
         self.map.len()
     }
 
-    // FIXME: We should really just implement the `iter` function for this Cache object,
-    // let the user to clone and collect the elements when needed.
-    /// Retrieve all elements as a vector of key value tuple.
+    /// Returns a clone of all elements as an unordered vector of key-value tuples.  Also removes
+    /// expired elements.
+    // FIXME: We should really just implement the `iter` function for this Cache object, let the
+    // user clone and collect the elements when needed.
     pub fn retrieve_all(&mut self) -> Vec<(K, V)> {
         self.remove_expired();
         let mut result = Vec::<(K, V)>::with_capacity(self.map.len());
@@ -257,7 +265,8 @@ impl<K, V> LruCache<K, V> where K: PartialOrd + Ord + Clone, V: Clone {
         result
     }
 
-    /// Return a vector of key value pairs ordered by most to least recently updated.
+    /// Returns a clone of all elements as a vector of key-value tuples ordered by most to least
+    /// recently updated.  Also removes expired elements.
     pub fn retrieve_all_ordered(&mut self) -> Vec<(K, V)> {
         self.remove_expired();
         let mut result = Vec::<(K, V)>::with_capacity(self.list.len());
