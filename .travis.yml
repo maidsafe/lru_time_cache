@@ -1,7 +1,6 @@
 env:
   global:
     - secure: Mhn0q9XXZ+2EqCOUfzBm/PantrBlVgQ4TM5OrA2J/X3qsiAGfNWvVA7TJKsDFy+3KoXHHEqfHGqq2ShwSC39SedJqUYvLiUaDFgz3dajGh1mrNfG3c0StiqkRD2cdRmFRI0e6t0QPvxBVdFPmBgoiNiquzJoSOKl5qqTMGnG83Y=
-    - ElfUtilsVersion=0.163
 os:
   - linux
   - osx
@@ -17,6 +16,9 @@ branches:
 cache:
   directories:
     - $HOME/elfutils-$ElfUtilsVersion
+before_install:
+    - curl -sSLO https://github.com/maidsafe/QA/raw/master/Bash%20Scripts/Travis/dependency_versions.sh
+    - . dependency_versions.sh
 script:
   - curl -sSL https://github.com/maidsafe/QA/raw/master/Bash%20Scripts/Travis/build_and_run_tests.sh | bash
 after_success:
