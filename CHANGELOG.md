@@ -1,5 +1,8 @@
 # Lru Time Cache - Change Log
 
+## [0.2.3]
+- Remove wildcard dependencies.
+
 ## [0.2.2]
 - Removes expired values before accessing elements. Removed deprecated check method.
 
