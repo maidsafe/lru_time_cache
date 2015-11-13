@@ -1,5 +1,8 @@
 # Lru Time Cache - Change Log
 
+## [0.2.4]
+- Update deprecated item, replaced by `std::thread::sleep`.
+
 ## [0.2.3]
 - Remove wildcard dependencies.
 
