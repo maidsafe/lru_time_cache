@@ -344,7 +344,8 @@ mod test {
             assert_eq!(lru_cache.len(), i + 1);
         }
 
-        ::std::thread::sleep_ms(100);
+        let duration = ::std::time::Duration::from_millis(100);
+        ::std::thread::sleep(duration);
         let _ = lru_cache.insert(11, 11);
 
         assert_eq!(lru_cache.len(), 1);
@@ -365,7 +366,8 @@ mod test {
         let _ = lru_cache.insert(0, 0);
         assert_eq!(lru_cache.len(), 1);
 
-        ::std::thread::sleep_ms(100);
+        let duration = ::std::time::Duration::from_millis(100);
+        ::std::thread::sleep(duration);
 
         assert!(!lru_cache.contains_key(&0));
         assert_eq!(lru_cache.len(), 0);
@@ -392,7 +394,8 @@ mod test {
             }
         }
 
-        ::std::thread::sleep_ms(100);
+        let duration = ::std::time::Duration::from_millis(100);
+        ::std::thread::sleep(duration);
         let _ = lru_cache.insert(1, 1);
 
         assert_eq!(lru_cache.len(), 1);
@@ -425,7 +428,8 @@ mod test {
             }
         }
 
-        ::std::thread::sleep_ms(100);
+        let duration = ::std::time::Duration::from_millis(100);
+        ::std::thread::sleep(duration);
         let _ = lru_cache.insert(Temp { id: generate_random_vec::<u8>(64), }, 1);
 
         assert_eq!(lru_cache.len(), 1);
