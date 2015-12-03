@@ -159,25 +159,27 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone, Value
     }
 
     /// Retrieves a reference to the value stored under `key`, or `None` if the key doesn't exist.
-    /// Also removes expired elements.
+    /// Also removes expired elements and updates the time.
     pub fn get(&mut self, key: &Key) -> Option<&Value> {
         self.remove_expired();
         let list = &mut self.list;
 
-        self.map.get(key).map(|result| {
+        self.map.get_mut(key).map(|result| {
             Self::update_key(list, key);
+            result.1 = time::SteadyTime::now();
             &result.0
         })
     }
 
     /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
-    /// exist.  Also removes expired elements.
+    /// exist.  Also removes expired elements and updates the time.
     pub fn get_mut(&mut self, key: &Key) -> Option<&mut Value> {
         self.remove_expired();
         let list = &mut self.list;
 
         self.map.get_mut(key).map(|result| {
             Self::update_key(list, key);
+            result.1 = time::SteadyTime::now();
             &mut result.0
         })
     }
@@ -196,27 +198,31 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone, Value
     }
 
     /// Returns a clone of all elements as an unordered vector of key-value tuples.  Also removes
-    /// expired elements.
+    /// expired elements and updates the time.
     // FIXME: We should really just implement the `iter` function for this Cache object, let the
     // user clone and collect the elements when needed.
     pub fn retrieve_all(&mut self) -> Vec<(Key, Value)> {
         self.remove_expired();
         let mut result = Vec::<(Key, Value)>::with_capacity(self.map.len());
-        self.map.iter().all(|a| {
+        self.map.iter_mut().all(|a| {
             result.push((a.0.clone(), a.1 .0.clone()));
+            a.1 .1 = time::SteadyTime::now();
             true
         });
         result
     }
 
     /// Returns a clone of all elements as a vector of key-value tuples ordered by most to least
-    /// recently updated.  Also removes expired elements.
+    /// recently updated.  Also removes expired elements and updates the time.
     pub fn retrieve_all_ordered(&mut self) -> Vec<(Key, Value)> {
         self.remove_expired();
         let mut result = Vec::<(Key, Value)>::with_capacity(self.list.len());
         for key in self.list.iter().rev() {
-            match self.map.get(key) {
-                Some(value) => result.push((key.clone(), value.0.clone())),
+            match self.map.get_mut(key) {
+                Some(value) => {
+                    result.push((key.clone(), value.0.clone()));
+                    value.1 = time::SteadyTime::now();
+                }
                 None => (),
             }
         }
@@ -466,6 +472,32 @@ mod test {
         for i in all.iter().rev() {
             lru_cache.remove_oldest_element();
             assert!(!lru_cache.contains_key(&i.0) && lru_cache.get(&i.0).is_none());
+        }
+    }
+
+    #[test]
+    fn update_time_check() {
+        let time_to_live = ::time::Duration::milliseconds(50);
+        let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+
+        assert_eq!(lru_cache.len(), 0);
+        let _ = lru_cache.insert(0, 0);
+        assert_eq!(lru_cache.len(), 1);
+
+        let duration = ::std::time::Duration::from_millis(30);
+        ::std::thread::sleep(duration);
+        {
+            let result = lru_cache.get(&0);
+            assert!(result.is_some());
+            let value = result.unwrap();
+            assert_eq!(*value, 0);
+        }
+        ::std::thread::sleep(duration);
+        {
+            let result = lru_cache.get(&0);
+            assert!(result.is_some());
+            let value = result.unwrap();
+            assert_eq!(*value, 0);
         }
     }
 }
