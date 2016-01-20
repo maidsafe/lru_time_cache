@@ -1,6 +1,6 @@
 [package]
 name = "lru_time_cache"
-version = "0.2.5"
+version = "0.2.6"
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Implementation of a Least Recently Used caching algorithm in a container which may be limited by size or time, ordered by most recently seen."
 documentation = "http://maidsafe.net/lru_time_cache/latest"

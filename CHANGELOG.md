@@ -1,5 +1,8 @@
 # Lru Time Cache - Change Log
 
+## [0.2.6]
+- Allow non-Clone Value types.
+
 ## [0.2.5]
 - Update time to live when accessing elements.
 
