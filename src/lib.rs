@@ -86,7 +86,6 @@ pub struct OccupiedEntry<'a, Value: 'a> {
 }
 
 /// Implementation of [LRU cache](index.html#least-recently-used-lru-cache).
-#[derive(Clone)]
 pub struct LruCache<Key, Value> {
     map: ::std::collections::BTreeMap<Key, (Value, time::SteadyTime)>,
     list: ::std::collections::VecDeque<Key>,
@@ -94,7 +93,7 @@ pub struct LruCache<Key, Value> {
     time_to_live: time::Duration,
 }
 
-impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone, Value: Clone {
+impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
     /// Constructor for capacity based `LruCache`.
     pub fn with_capacity(capacity: usize) -> LruCache<Key, Value> {
         LruCache {
@@ -197,38 +196,6 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone, Value
         self.map.len()
     }
 
-    /// Returns a clone of all elements as an unordered vector of key-value tuples.  Also removes
-    /// expired elements and updates the time.
-    // FIXME: We should really just implement the `iter` function for this Cache object, let the
-    // user clone and collect the elements when needed.
-    pub fn retrieve_all(&mut self) -> Vec<(Key, Value)> {
-        self.remove_expired();
-        let mut result = Vec::<(Key, Value)>::with_capacity(self.map.len());
-        self.map.iter_mut().all(|a| {
-            result.push((a.0.clone(), a.1 .0.clone()));
-            a.1 .1 = time::SteadyTime::now();
-            true
-        });
-        result
-    }
-
-    /// Returns a clone of all elements as a vector of key-value tuples ordered by most to least
-    /// recently updated.  Also removes expired elements and updates the time.
-    pub fn retrieve_all_ordered(&mut self) -> Vec<(Key, Value)> {
-        self.remove_expired();
-        let mut result = Vec::<(Key, Value)>::with_capacity(self.list.len());
-        for key in self.list.iter().rev() {
-            match self.map.get_mut(key) {
-                Some(value) => {
-                    result.push((key.clone(), value.0.clone()));
-                    value.1 = time::SteadyTime::now();
-                }
-                None => (),
-            }
-        }
-        result
-    }
-
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
     pub fn entry(&mut self, key: Key) -> Entry<Key, Value> {
         // We need to do it the ugly way below due to this issue:
@@ -266,6 +233,51 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone, Value
     fn remove_expired(&mut self) {
         while self.check_time_expired() {
             self.remove_oldest_element();
+        }
+    }
+}
+
+impl<Key: PartialOrd + Ord + Clone, Value: Clone> LruCache<Key, Value> {
+    /// Returns a clone of all elements as an unordered vector of key-value tuples.  Also removes
+    /// expired elements and updates the time.
+    // FIXME: We should really just implement the `iter` function for this Cache object, let the
+    // user clone and collect the elements when needed.
+    pub fn retrieve_all(&mut self) -> Vec<(Key, Value)> {
+        self.remove_expired();
+        let mut result = Vec::<(Key, Value)>::with_capacity(self.map.len());
+        self.map.iter_mut().all(|a| {
+            result.push((a.0.clone(), a.1 .0.clone()));
+            a.1 .1 = time::SteadyTime::now();
+            true
+        });
+        result
+    }
+
+    /// Returns a clone of all elements as a vector of key-value tuples ordered by most to least
+    /// recently updated.  Also removes expired elements and updates the time.
+    pub fn retrieve_all_ordered(&mut self) -> Vec<(Key, Value)> {
+        self.remove_expired();
+        let mut result = Vec::<(Key, Value)>::with_capacity(self.list.len());
+        for key in self.list.iter().rev() {
+            match self.map.get_mut(key) {
+                Some(value) => {
+                    result.push((key.clone(), value.0.clone()));
+                    value.1 = time::SteadyTime::now();
+                }
+                None => (),
+            }
+        }
+        result
+    }
+}
+
+impl<Key, Value> Clone for LruCache<Key, Value> where Key: Clone, Value: Clone {
+    fn clone(&self) -> LruCache<Key, Value> {
+        LruCache {
+            map: self.map.clone(),
+            list: self.list.clone(),
+            capacity: self.capacity,
+            time_to_live: self.time_to_live,
         }
     }
 }
