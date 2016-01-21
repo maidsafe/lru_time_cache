@@ -189,11 +189,14 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
         self.map.contains_key(key)
     }
 
-    /// Returns the size of the cache, i.e. the number of cached key-value pairs.  Also removes
-    /// expired elements.
-    pub fn len(&mut self) -> usize {
-        self.remove_expired();
-        self.map.len()
+    /// Returns the size of the cache, i.e. the number of cached non-expired key-value pairs.
+    pub fn len(&self) -> usize {
+        self.map.len() - self.list.iter().take_while(|key| self.expired(key)).count()
+    }
+
+    /// Returns `true` if there are no non-expired entries in the cache.
+    pub fn is_empty(&self) -> bool {
+        self.list.iter().all(|key| self.expired(key))
     }
 
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
@@ -211,16 +214,19 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
         }
     }
 
+    fn expired(&self, key: &Key) -> bool {
+        self.map.get(key).map_or(false, |v| v.1 + self.time_to_live < time::SteadyTime::now())
+    }
+
     fn remove_oldest_element(&mut self) {
         let _ = self.list.pop_front().map(|key| { assert!(self.map.remove(&key).is_some()) });
     }
 
     fn check_time_expired(&self) -> bool {
-        if self.time_to_live == time::Duration::max_value() || self.map.len() == 0 {
+        if self.time_to_live == time::Duration::max_value() || self.map.is_empty() {
             false
         } else {
-            self.map.get(self.list.front().unwrap()).unwrap().1 + self.time_to_live <
-            time::SteadyTime::now()
+            self.expired(self.list.front().unwrap())
         }
     }
 
@@ -259,12 +265,9 @@ impl<Key: PartialOrd + Ord + Clone, Value: Clone> LruCache<Key, Value> {
         self.remove_expired();
         let mut result = Vec::<(Key, Value)>::with_capacity(self.list.len());
         for key in self.list.iter().rev() {
-            match self.map.get_mut(key) {
-                Some(value) => {
-                    result.push((key.clone(), value.0.clone()));
-                    value.1 = time::SteadyTime::now();
-                }
-                None => (),
+            if let Some(value) = self.map.get_mut(key) {
+                result.push((key.clone(), value.0.clone()));
+                value.1 = time::SteadyTime::now();
             }
         }
         result
@@ -369,10 +372,15 @@ mod test {
         assert_eq!(lru_cache.len(), 1);
 
         for i in 0..10 {
+            assert!(!lru_cache.is_empty());
             assert_eq!(lru_cache.len(), i + 1);
             let _ = lru_cache.insert(i, i);
             assert_eq!(lru_cache.len(), i + 2);
         }
+
+        ::std::thread::sleep(duration);
+        assert_eq!(0, lru_cache.len());
+        assert!(lru_cache.is_empty());
     }
 
     #[test]
