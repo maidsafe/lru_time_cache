@@ -66,6 +66,8 @@
 extern crate rand;
 extern crate time;
 
+use std::collections::{BTreeMap, VecDeque};
+
 /// A view into a single entry in an LRU cache, which may either be vacant or occupied.
 pub enum Entry<'a, Key: 'a, Value: 'a> {
     /// A vacant Entry
@@ -87,8 +89,8 @@ pub struct OccupiedEntry<'a, Value: 'a> {
 
 /// Implementation of [LRU cache](index.html#least-recently-used-lru-cache).
 pub struct LruCache<Key, Value> {
-    map: ::std::collections::BTreeMap<Key, (Value, time::SteadyTime)>,
-    list: ::std::collections::VecDeque<Key>,
+    map: BTreeMap<Key, (Value, time::SteadyTime)>,
+    list: VecDeque<Key>,
     capacity: usize,
     time_to_live: time::Duration,
 }
@@ -97,8 +99,8 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
     /// Constructor for capacity based `LruCache`.
     pub fn with_capacity(capacity: usize) -> LruCache<Key, Value> {
         LruCache {
-            map: ::std::collections::BTreeMap::new(),
-            list: ::std::collections::VecDeque::new(),
+            map: BTreeMap::new(),
+            list: VecDeque::new(),
             capacity: capacity,
             time_to_live: time::Duration::max_value(),
         }
@@ -107,8 +109,8 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
     /// Constructor for time based `LruCache`.
     pub fn with_expiry_duration(time_to_live: time::Duration) -> LruCache<Key, Value> {
         LruCache {
-            map: ::std::collections::BTreeMap::new(),
-            list: ::std::collections::VecDeque::new(),
+            map: BTreeMap::new(),
+            list: VecDeque::new(),
             capacity: ::std::usize::MAX,
             time_to_live: time_to_live,
         }
@@ -119,8 +121,8 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
                                              capacity: usize)
                                              -> LruCache<Key, Value> {
         LruCache {
-            map: ::std::collections::BTreeMap::new(),
-            list: ::std::collections::VecDeque::new(),
+            map: BTreeMap::new(),
+            list: VecDeque::new(),
             capacity: capacity,
             time_to_live: time_to_live,
         }
@@ -145,16 +147,8 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
 
     /// Removes a key-value pair from the cache.
     pub fn remove(&mut self, key: &Key) -> Option<Value> {
-        let result = self.map.remove(key);
-
-        if result.is_some() {
-            let position = self.list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key))
-                              .unwrap().0;
-            let _ = self.list.remove(position);
-            Some(result.unwrap().0)
-        } else {
-            None
-        }
+        self.list.retain(|k| *k < *key || *k > *key);
+        self.map.remove(key).map(|(value, _)| value)
     }
 
     /// Retrieves a reference to the value stored under `key`, or `None` if the key doesn't exist.
@@ -183,10 +177,9 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
         })
     }
 
-    /// Returns whether `key` exists in the cache or not.  Also removes expired elements.
-    pub fn contains_key(&mut self, key: &Key) -> bool {
-        self.remove_expired();
-        self.map.contains_key(key)
+    /// Returns whether `key` exists in the cache or not.
+    pub fn contains_key(&self, key: &Key) -> bool {
+        self.map.contains_key(key) && !self.expired(key)
     }
 
     /// Returns the size of the cache, i.e. the number of cached non-expired key-value pairs.
@@ -223,16 +216,12 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
     }
 
     fn check_time_expired(&self) -> bool {
-        if self.time_to_live == time::Duration::max_value() || self.map.is_empty() {
-            false
-        } else {
-            self.expired(self.list.front().unwrap())
-        }
+        self.time_to_live != time::Duration::max_value()
+            && self.list.front().map_or(false, |key| self.expired(key))
     }
 
-    fn update_key(list: &mut ::std::collections::VecDeque<Key>, key: &Key) {
-        let position = list.iter().enumerate().find(|a| !(*a.1 < *key || *a.1 > *key)).unwrap().0;
-        let _ = list.remove(position);
+    fn update_key(list: &mut VecDeque<Key>, key: &Key) {
+        list.retain(|k| *k < *key || *k > *key);
         list.push_back(key.clone());
     }
 
@@ -285,7 +274,7 @@ impl<Key, Value> Clone for LruCache<Key, Value> where Key: Clone, Value: Clone {
     }
 }
 
-impl<'a, Key: PartialOrd + Ord + Clone, Value: Clone> VacantEntry<'a, Key, Value> {
+impl<'a, Key: PartialOrd + Ord + Clone, Value> VacantEntry<'a, Key, Value> {
     /// Inserts a value
     pub fn insert(self, value: Value) -> &'a mut Value {
         let _ = self.cache.insert(self.key.clone(), value);
@@ -293,14 +282,14 @@ impl<'a, Key: PartialOrd + Ord + Clone, Value: Clone> VacantEntry<'a, Key, Value
     }
 }
 
-impl<'a, Value: Clone> OccupiedEntry<'a, Value> {
+impl<'a, Value> OccupiedEntry<'a, Value> {
     /// Converts the entry into a mutable reference to its value.
     pub fn into_mut(self) -> &'a mut Value {
         self.value
     }
 }
 
-impl<'a, Key: PartialOrd + Ord + Clone, Value: Clone> Entry<'a, Key, Value> {
+impl<'a, Key: PartialOrd + Ord + Clone, Value> Entry<'a, Key, Value> {
     /// Ensures a value is in the entry by inserting the default if empty, and returns
     /// a mutable reference to the value in the entry.
     pub fn or_insert(self, default: Value) -> &'a mut Value {
