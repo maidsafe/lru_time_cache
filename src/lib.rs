@@ -207,8 +207,13 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
         }
     }
 
+    fn has_expiry(&self) -> bool {
+        self.time_to_live != time::Duration::max_value()
+    }
+
     fn expired(&self, key: &Key) -> bool {
-        self.map.get(key).map_or(false, |v| v.1 + self.time_to_live < time::SteadyTime::now())
+        let now = time::SteadyTime::now();
+        self.has_expiry() && self.map.get(key).map_or(false, |v| v.1 + self.time_to_live < now)
     }
 
     fn remove_oldest_element(&mut self) {
@@ -216,8 +221,7 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
     }
 
     fn check_time_expired(&self) -> bool {
-        self.time_to_live != time::Duration::max_value()
-            && self.list.front().map_or(false, |key| self.expired(key))
+        self.has_expiry() && self.list.front().map_or(false, |key| self.expired(key))
     }
 
     fn update_key(list: &mut VecDeque<Key>, key: &Key) {
@@ -239,10 +243,11 @@ impl<Key: PartialOrd + Ord + Clone, Value: Clone> LruCache<Key, Value> {
     // user clone and collect the elements when needed.
     pub fn retrieve_all(&mut self) -> Vec<(Key, Value)> {
         self.remove_expired();
+        let now = time::SteadyTime::now();
         let mut result = Vec::<(Key, Value)>::with_capacity(self.map.len());
         self.map.iter_mut().all(|a| {
             result.push((a.0.clone(), a.1 .0.clone()));
-            a.1 .1 = time::SteadyTime::now();
+            a.1 .1 = now;
             true
         });
         result
@@ -252,11 +257,12 @@ impl<Key: PartialOrd + Ord + Clone, Value: Clone> LruCache<Key, Value> {
     /// recently updated.  Also removes expired elements and updates the time.
     pub fn retrieve_all_ordered(&mut self) -> Vec<(Key, Value)> {
         self.remove_expired();
+        let now = time::SteadyTime::now();
         let mut result = Vec::<(Key, Value)>::with_capacity(self.list.len());
         for key in self.list.iter().rev() {
             if let Some(value) = self.map.get_mut(key) {
                 result.push((key.clone(), value.0.clone()));
-                value.1 = time::SteadyTime::now();
+                value.1 = now;
             }
         }
         result
