@@ -196,6 +196,11 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
         self.map.len()
     }
 
+    /// Returns `true` if there are no entries in the cache. Does not remove expired entries.
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
+    }
+
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
     pub fn entry(&mut self, key: Key) -> Entry<Key, Value> {
         // We need to do it the ugly way below due to this issue:
@@ -216,7 +221,7 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
     }
 
     fn check_time_expired(&self) -> bool {
-        if self.time_to_live == time::Duration::max_value() || self.map.len() == 0 {
+        if self.time_to_live == time::Duration::max_value() || self.map.is_empty() {
             false
         } else {
             self.map.get(self.list.front().unwrap()).unwrap().1 + self.time_to_live <
@@ -259,12 +264,9 @@ impl<Key: PartialOrd + Ord + Clone, Value: Clone> LruCache<Key, Value> {
         self.remove_expired();
         let mut result = Vec::<(Key, Value)>::with_capacity(self.list.len());
         for key in self.list.iter().rev() {
-            match self.map.get_mut(key) {
-                Some(value) => {
-                    result.push((key.clone(), value.0.clone()));
-                    value.1 = time::SteadyTime::now();
-                }
-                None => (),
+            if let Some(value) = self.map.get_mut(key) {
+                result.push((key.clone(), value.0.clone()));
+                value.1 = time::SteadyTime::now();
             }
         }
         result
