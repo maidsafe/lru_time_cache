@@ -95,7 +95,9 @@ pub struct LruCache<Key, Value> {
     time_to_live: time::Duration,
 }
 
-impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
+impl<Key, Value> LruCache<Key, Value>
+    where Key: PartialOrd + Ord + Clone
+{
     /// Constructor for capacity based `LruCache`.
     pub fn with_capacity(capacity: usize) -> LruCache<Key, Value> {
         LruCache {
@@ -196,14 +198,17 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
     pub fn entry(&mut self, key: Key) -> Entry<Key, Value> {
         // We need to do it the ugly way below due to this issue:
         // https://github.com/rust-lang/rfcs/issues/811
-        //match self.get_mut(&key) {
-        //    Some(value) => Entry::Occupied(OccupiedEntry{value: value}),
-        //    None => Entry::Vacant(VacantEntry{key: key, cache: self}),
-        //}
+        // match self.get_mut(&key) {
+        //     Some(value) => Entry::Occupied(OccupiedEntry{value: value}),
+        //     None => Entry::Vacant(VacantEntry{key: key, cache: self}),
+        // }
         if self.contains_key(&key) {
             Entry::Occupied(OccupiedEntry { value: self.get_mut(&key).unwrap() })
         } else {
-            Entry::Vacant(VacantEntry { key: key, cache: self })
+            Entry::Vacant(VacantEntry {
+                key: key,
+                cache: self,
+            })
         }
     }
 
@@ -217,7 +222,7 @@ impl<Key, Value> LruCache<Key, Value> where Key: PartialOrd + Ord + Clone {
     }
 
     fn remove_oldest_element(&mut self) {
-        let _ = self.list.pop_front().map(|key| { assert!(self.map.remove(&key).is_some()) });
+        let _ = self.list.pop_front().map(|key| assert!(self.map.remove(&key).is_some()));
     }
 
     fn check_time_expired(&self) -> bool {
@@ -246,8 +251,8 @@ impl<Key: PartialOrd + Ord + Clone, Value: Clone> LruCache<Key, Value> {
         let now = time::SteadyTime::now();
         let mut result = Vec::<(Key, Value)>::with_capacity(self.map.len());
         self.map.iter_mut().all(|a| {
-            result.push((a.0.clone(), a.1 .0.clone()));
-            a.1 .1 = now;
+            result.push((a.0.clone(), (a.1).0.clone()));
+            (a.1).1 = now;
             true
         });
         result
@@ -269,7 +274,10 @@ impl<Key: PartialOrd + Ord + Clone, Value: Clone> LruCache<Key, Value> {
     }
 }
 
-impl<Key, Value> Clone for LruCache<Key, Value> where Key: Clone, Value: Clone {
+impl<Key, Value> Clone for LruCache<Key, Value>
+    where Key: Clone,
+          Value: Clone
+{
     fn clone(&self) -> LruCache<Key, Value> {
         LruCache {
             map: self.map.clone(),
@@ -318,7 +326,8 @@ impl<'a, Key: PartialOrd + Ord + Clone, Value> Entry<'a, Key, Value> {
 #[cfg(test)]
 mod test {
     fn generate_random_vec<T>(len: usize) -> Vec<T>
-        where T: ::rand::Rand {
+        where T: ::rand::Rand
+    {
         let mut vec = Vec::<T>::with_capacity(len);
         for _ in 0..len {
             vec.push(::rand::random::<T>());
@@ -440,7 +449,7 @@ mod test {
                 assert_eq!(lru_cache.len(), i);
             }
 
-            let _ = lru_cache.insert(Temp { id: generate_random_vec::<u8>(64), }, i);
+            let _ = lru_cache.insert(Temp { id: generate_random_vec::<u8>(64) }, i);
 
             if i < size {
                 assert_eq!(lru_cache.len(), i + 1);
@@ -451,7 +460,7 @@ mod test {
 
         let duration = ::std::time::Duration::from_millis(100);
         ::std::thread::sleep(duration);
-        let _ = lru_cache.insert(Temp { id: generate_random_vec::<u8>(64), }, 1);
+        let _ = lru_cache.insert(Temp { id: generate_random_vec::<u8>(64) }, 1);
 
         assert_eq!(lru_cache.len(), 1);
     }
@@ -468,8 +477,8 @@ mod test {
         let all = lru_cache.retrieve_all();
         assert_eq!(all.len(), lru_cache.map.len());
 
-        assert!(all.iter().all(|a|
-            lru_cache.contains_key(&a.0) && *lru_cache.get(&a.0).unwrap() == a.1));
+        assert!(all.iter()
+                   .all(|a| lru_cache.contains_key(&a.0) && *lru_cache.get(&a.0).unwrap() == a.1));
     }
 
     #[test]
