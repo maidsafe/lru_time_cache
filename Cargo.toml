@@ -10,6 +10,7 @@ license = "GPL-3.0"
 homepage = "http://maidsafe.net"
 
 [dependencies]
+clippy = {version = "~0.0.37", optional = true}
 time = "~0.1.34"
 
 [dev-dependencies]
