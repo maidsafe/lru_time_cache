@@ -1,5 +1,9 @@
 # Lru Time Cache - Change Log
 
+## [0.3.0]
+- Remove dependency on the time crate.
+- Use std::time::Duration in the API
+
 ## [0.2.7]
 - Updated dependencies.
 
