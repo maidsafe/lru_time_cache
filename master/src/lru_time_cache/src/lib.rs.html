@@ -685,7 +685,7 @@
             <span class='ident'>map</span>: <span class='ident'>BTreeMap</span>::<span class='ident'>new</span>(),
             <span class='ident'>list</span>: <span class='ident'>VecDeque</span>::<span class='ident'>new</span>(),
             <span class='ident'>capacity</span>: <span class='ident'>capacity</span>,
-            <span class='ident'>time_to_live</span>: <span class='ident'>Duration</span>::<span class='ident'>new</span>(<span class='ident'>std</span>::<span class='ident'>u64</span>::<span class='ident'>MAX</span>, <span class='ident'>std</span>::<span class='ident'>u32</span>::<span class='ident'>MAX</span>),
+            <span class='ident'>time_to_live</span>: <span class='ident'>Duration</span>::<span class='ident'>new</span>(<span class='ident'>std</span>::<span class='ident'>u64</span>::<span class='ident'>MAX</span>, <span class='number'>999_999_999</span>),
         }
     }
 
@@ -794,7 +794,7 @@
     }
 
     <span class='kw'>fn</span> <span class='ident'>has_expiry</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
-        <span class='self'>self</span>.<span class='ident'>time_to_live</span> <span class='op'>!=</span> <span class='ident'>Duration</span>::<span class='ident'>new</span>(<span class='ident'>std</span>::<span class='ident'>u64</span>::<span class='ident'>MAX</span>, <span class='ident'>std</span>::<span class='ident'>u32</span>::<span class='ident'>MAX</span>)
+        <span class='self'>self</span>.<span class='ident'>time_to_live</span> <span class='op'>!=</span> <span class='ident'>Duration</span>::<span class='ident'>new</span>(<span class='ident'>std</span>::<span class='ident'>u64</span>::<span class='ident'>MAX</span>, <span class='number'>999_999_999</span>)
     }
 
     <span class='kw'>fn</span> <span class='ident'>expired</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Key</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
