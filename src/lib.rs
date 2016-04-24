@@ -108,7 +108,7 @@ impl<Key, Value> LruCache<Key, Value>
             map: BTreeMap::new(),
             list: VecDeque::new(),
             capacity: capacity,
-            time_to_live: Duration::new(std::u64::MAX, std::u32::MAX),
+            time_to_live: Duration::new(std::u64::MAX, 999_999_999),
         }
     }
 
@@ -217,7 +217,7 @@ impl<Key, Value> LruCache<Key, Value>
     }
 
     fn has_expiry(&self) -> bool {
-        self.time_to_live != Duration::new(std::u64::MAX, std::u32::MAX)
+        self.time_to_live != Duration::new(std::u64::MAX, 999_999_999)
     }
 
     fn expired(&self, key: &Key) -> bool {
