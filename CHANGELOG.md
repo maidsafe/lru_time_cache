@@ -1,5 +1,8 @@
 # Lru Time Cache - Change Log
 
+## [0.3.1]
+- Fix arithmetic operation overflows.
+
 ## [0.3.0]
 - Remove dependency on the time crate.
 - Use std::time::Duration in the API
