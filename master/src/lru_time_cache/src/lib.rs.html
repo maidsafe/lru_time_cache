@@ -574,6 +574,45 @@
 <span id="531">531</span>
 <span id="532">532</span>
 <span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright 2015 MaidSafe.net limited.</span>
 <span class='comment'>//</span>
@@ -647,6 +686,7 @@
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>rand</span>;
 
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>collections</span>::{<span class='ident'>BTreeMap</span>, <span class='ident'>VecDeque</span>};
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>collections</span>::<span class='ident'>btree_map</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>time</span>::{<span class='ident'>Instant</span>, <span class='ident'>Duration</span>};
 
 <span class='doccomment'>/// A view into a single entry in an LRU cache, which may either be vacant or occupied.</span>
@@ -666,6 +706,27 @@
 <span class='doccomment'>/// An occupied Entry.</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>OccupiedEntry</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Value</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
     <span class='ident'>value</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='kw-2'>mut</span> <span class='ident'>Value</span>,
+}
+
+<span class='doccomment'>/// An iterator over an `LruCache`&#39;s entries that does not modify the timestamp.</span>
+<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>PeekIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>: <span class='lifetime'>&#39;a</span>, <span class='ident'>Value</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
+    <span class='ident'>map_iter</span>: <span class='ident'>btree_map</span>::<span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>, (<span class='ident'>Value</span>, <span class='ident'>Instant</span>)<span class='op'>&gt;</span>,
+    <span class='ident'>lru_cache</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>LruCache</span><span class='op'>&lt;</span><span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span>,
+}
+
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span> <span class='ident'>Iterator</span> <span class='kw'>for</span> <span class='ident'>PeekIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span>
+    <span class='kw'>where</span> <span class='ident'>Key</span>: <span class='ident'>PartialOrd</span> <span class='op'>+</span> <span class='ident'>Ord</span> <span class='op'>+</span> <span class='ident'>Clone</span>
+{
+    <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> (<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Key</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Value</span>);
+
+    <span class='kw'>fn</span> <span class='ident'>next</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Key</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Value</span>)<span class='op'>&gt;</span> {
+        <span class='kw'>while</span> <span class='kw'>let</span> <span class='prelude-val'>Some</span>((<span class='ident'>key</span>, <span class='kw-2'>&amp;</span>(<span class='kw-2'>ref</span> <span class='ident'>value</span>, _))) <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>map_iter</span>.<span class='ident'>next</span>() {
+            <span class='kw'>if</span> <span class='op'>!</span><span class='self'>self</span>.<span class='ident'>lru_cache</span>.<span class='ident'>expired</span>(<span class='ident'>key</span>) {
+                <span class='kw'>return</span> <span class='prelude-val'>Some</span>((<span class='ident'>key</span>, <span class='ident'>value</span>));
+            }
+        }
+        <span class='prelude-val'>None</span>
+    }
 }
 
 <span class='doccomment'>/// Implementation of [LRU cache](index.html#least-recently-used-lru-cache).</span>
@@ -734,6 +795,12 @@
         <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>remove</span>(<span class='ident'>key</span>).<span class='ident'>map</span>(<span class='op'>|</span>(<span class='ident'>value</span>, _)<span class='op'>|</span> <span class='ident'>value</span>)
     }
 
+    <span class='doccomment'>/// Clears the `LruCache`, removing all values.</span>
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>clear</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) {
+        <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>clear</span>();
+        <span class='self'>self</span>.<span class='ident'>list</span>.<span class='ident'>clear</span>();
+    }
+
     <span class='doccomment'>/// Retrieves a reference to the value stored under `key`, or `None` if the key doesn&#39;t exist.</span>
     <span class='doccomment'>/// Also removes expired elements and updates the time.</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>get</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Key</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>Value</span><span class='op'>&gt;</span> {
@@ -745,6 +812,15 @@
             <span class='ident'>result</span>.<span class='number'>1</span> <span class='op'>=</span> <span class='ident'>Instant</span>::<span class='ident'>now</span>();
             <span class='kw-2'>&amp;</span><span class='ident'>result</span>.<span class='number'>0</span>
         })
+    }
+
+    <span class='doccomment'>/// Returns a reference to the value with the given `key`, if present and not expired, without</span>
+    <span class='doccomment'>/// updating the timestamp.</span>
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>peek</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Key</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>Value</span><span class='op'>&gt;</span> {
+        <span class='kw'>if</span> <span class='self'>self</span>.<span class='ident'>expired</span>(<span class='ident'>key</span>) {
+            <span class='kw'>return</span> <span class='prelude-val'>None</span>;
+        }
+        <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>get</span>(<span class='ident'>key</span>).<span class='ident'>map</span>(<span class='op'>|</span><span class='kw-2'>&amp;</span>(<span class='kw-2'>ref</span> <span class='ident'>value</span>, _)<span class='op'>|</span> <span class='ident'>value</span>)
     }
 
     <span class='doccomment'>/// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn&#39;t</span>
@@ -790,6 +866,14 @@
                 <span class='ident'>key</span>: <span class='ident'>key</span>,
                 <span class='ident'>cache</span>: <span class='self'>self</span>,
             })
+        }
+    }
+
+    <span class='doccomment'>/// Returns an iterator over all entries that does not modify the timestamps.</span>
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>peek_iter</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>PeekIterator</span><span class='op'>&lt;</span><span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span> {
+        <span class='ident'>PeekIterator</span> {
+            <span class='ident'>map_iter</span>: <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>iter</span>(),
+            <span class='ident'>lru_cache</span>: <span class='self'>self</span>,
         }
     }
 
@@ -906,6 +990,7 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span>
 <span class='kw'>mod</span> <span class='ident'>test</span> {
+    <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>thread</span>;
     <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>time</span>::<span class='ident'>Duration</span>;
 
     <span class='kw'>fn</span> <span class='ident'>generate_random_vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>(<span class='ident'>len</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>
@@ -1061,7 +1146,7 @@
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>all</span>.<span class='ident'>len</span>(), <span class='ident'>lru_cache</span>.<span class='ident'>map</span>.<span class='ident'>len</span>());
 
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>all</span>.<span class='ident'>iter</span>()
-                   .<span class='ident'>all</span>(<span class='op'>|</span><span class='ident'>a</span><span class='op'>|</span> <span class='ident'>lru_cache</span>.<span class='ident'>contains_key</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>.<span class='number'>0</span>) <span class='op'>&amp;&amp;</span> <span class='op'>*</span><span class='ident'>lru_cache</span>.<span class='ident'>get</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>.<span class='number'>0</span>).<span class='ident'>unwrap</span>() <span class='op'>==</span> <span class='ident'>a</span>.<span class='number'>1</span>));
+            .<span class='ident'>all</span>(<span class='op'>|</span><span class='ident'>a</span><span class='op'>|</span> <span class='ident'>lru_cache</span>.<span class='ident'>contains_key</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>.<span class='number'>0</span>) <span class='op'>&amp;&amp;</span> <span class='op'>*</span><span class='ident'>lru_cache</span>.<span class='ident'>get</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>.<span class='number'>0</span>).<span class='ident'>unwrap</span>() <span class='op'>==</span> <span class='ident'>a</span>.<span class='number'>1</span>));
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
@@ -1092,20 +1177,13 @@
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>lru_cache</span>.<span class='ident'>len</span>(), <span class='number'>1</span>);
 
         <span class='kw'>let</span> <span class='ident'>duration</span> <span class='op'>=</span> <span class='ident'>Duration</span>::<span class='ident'>from_millis</span>(<span class='number'>30</span>);
-        ::<span class='ident'>std</span>::<span class='ident'>thread</span>::<span class='ident'>sleep</span>(<span class='ident'>duration</span>);
-        {
-            <span class='kw'>let</span> <span class='ident'>result</span> <span class='op'>=</span> <span class='ident'>lru_cache</span>.<span class='ident'>get</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>);
-            <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>result</span>.<span class='ident'>is_some</span>());
-            <span class='kw'>let</span> <span class='ident'>value</span> <span class='op'>=</span> <span class='ident'>result</span>.<span class='ident'>unwrap</span>();
-            <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='op'>*</span><span class='ident'>value</span>, <span class='number'>0</span>);
-        }
-        ::<span class='ident'>std</span>::<span class='ident'>thread</span>::<span class='ident'>sleep</span>(<span class='ident'>duration</span>);
-        {
-            <span class='kw'>let</span> <span class='ident'>result</span> <span class='op'>=</span> <span class='ident'>lru_cache</span>.<span class='ident'>get</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>);
-            <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>result</span>.<span class='ident'>is_some</span>());
-            <span class='kw'>let</span> <span class='ident'>value</span> <span class='op'>=</span> <span class='ident'>result</span>.<span class='ident'>unwrap</span>();
-            <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='op'>*</span><span class='ident'>value</span>, <span class='number'>0</span>);
-        }
+        <span class='ident'>thread</span>::<span class='ident'>sleep</span>(<span class='ident'>duration</span>);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>), <span class='ident'>lru_cache</span>.<span class='ident'>get</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>));
+        <span class='ident'>thread</span>::<span class='ident'>sleep</span>(<span class='ident'>duration</span>);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>), <span class='ident'>lru_cache</span>.<span class='ident'>peek</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='macro'>vec</span><span class='macro'>!</span>[(<span class='kw-2'>&amp;</span><span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='number'>0</span>)], <span class='ident'>lru_cache</span>.<span class='ident'>peek_iter</span>().<span class='ident'>collect</span>::<span class='op'>&lt;</span><span class='ident'>Vec</span><span class='op'>&lt;</span>_<span class='op'>&gt;&gt;</span>());
+        <span class='ident'>thread</span>::<span class='ident'>sleep</span>(<span class='ident'>duration</span>);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='prelude-val'>None</span>, <span class='ident'>lru_cache</span>.<span class='ident'>peek</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>));
     }
 }
 </pre>
