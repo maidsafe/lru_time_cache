@@ -1,5 +1,8 @@
 # Lru Time Cache - Change Log
 
+## [0.4.0]
+- Add `clear`, `peek` and `peek_iter` methods.
+
 ## [0.3.1]
 - Fix arithmetic operation overflows.
 
