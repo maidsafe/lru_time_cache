@@ -70,6 +70,7 @@
 extern crate rand;
 
 use std::collections::{BTreeMap, VecDeque};
+use std::collections::btree_map;
 use std::time::{Instant, Duration};
 
 /// A view into a single entry in an LRU cache, which may either be vacant or occupied.
@@ -89,6 +90,27 @@ pub struct VacantEntry<'a, Key: 'a, Value: 'a> {
 /// An occupied Entry.
 pub struct OccupiedEntry<'a, Value: 'a> {
     value: &'a mut Value,
+}
+
+/// An iterator over an `LruCache`'s entries that does not modify the timestamp.
+pub struct PeekIterator<'a, Key: 'a, Value: 'a> {
+    map_iter: btree_map::Iter<'a, Key, (Value, Instant)>,
+    lru_cache: &'a LruCache<Key, Value>,
+}
+
+impl<'a, Key, Value> Iterator for PeekIterator<'a, Key, Value>
+    where Key: PartialOrd + Ord + Clone
+{
+    type Item = (&'a Key, &'a Value);
+
+    fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
+        while let Some((key, &(ref value, _))) = self.map_iter.next() {
+            if !self.lru_cache.expired(key) {
+                return Some((key, value));
+            }
+        }
+        None
+    }
 }
 
 /// Implementation of [LRU cache](index.html#least-recently-used-lru-cache).
@@ -157,6 +179,12 @@ impl<Key, Value> LruCache<Key, Value>
         self.map.remove(key).map(|(value, _)| value)
     }
 
+    /// Clears the `LruCache`, removing all values.
+    pub fn clear(&mut self) {
+        self.map.clear();
+        self.list.clear();
+    }
+
     /// Retrieves a reference to the value stored under `key`, or `None` if the key doesn't exist.
     /// Also removes expired elements and updates the time.
     pub fn get(&mut self, key: &Key) -> Option<&Value> {
@@ -168,6 +196,15 @@ impl<Key, Value> LruCache<Key, Value>
             result.1 = Instant::now();
             &result.0
         })
+    }
+
+    /// Returns a reference to the value with the given `key`, if present and not expired, without
+    /// updating the timestamp.
+    pub fn peek(&self, key: &Key) -> Option<&Value> {
+        if self.expired(key) {
+            return None;
+        }
+        self.map.get(key).map(|&(ref value, _)| value)
     }
 
     /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
@@ -213,6 +250,14 @@ impl<Key, Value> LruCache<Key, Value>
                 key: key,
                 cache: self,
             })
+        }
+    }
+
+    /// Returns an iterator over all entries that does not modify the timestamps.
+    pub fn peek_iter<'a>(&'a self) -> PeekIterator<'a, Key, Value> {
+        PeekIterator {
+            map_iter: self.map.iter(),
+            lru_cache: self,
         }
     }
 
@@ -329,6 +374,7 @@ impl<'a, Key: PartialOrd + Ord + Clone, Value> Entry<'a, Key, Value> {
 
 #[cfg(test)]
 mod test {
+    use std::thread;
     use std::time::Duration;
 
     fn generate_random_vec<T>(len: usize) -> Vec<T>
@@ -484,7 +530,7 @@ mod test {
         assert_eq!(all.len(), lru_cache.map.len());
 
         assert!(all.iter()
-                   .all(|a| lru_cache.contains_key(&a.0) && *lru_cache.get(&a.0).unwrap() == a.1));
+            .all(|a| lru_cache.contains_key(&a.0) && *lru_cache.get(&a.0).unwrap() == a.1));
     }
 
     #[test]
@@ -515,19 +561,12 @@ mod test {
         assert_eq!(lru_cache.len(), 1);
 
         let duration = Duration::from_millis(30);
-        ::std::thread::sleep(duration);
-        {
-            let result = lru_cache.get(&0);
-            assert!(result.is_some());
-            let value = result.unwrap();
-            assert_eq!(*value, 0);
-        }
-        ::std::thread::sleep(duration);
-        {
-            let result = lru_cache.get(&0);
-            assert!(result.is_some());
-            let value = result.unwrap();
-            assert_eq!(*value, 0);
-        }
+        thread::sleep(duration);
+        assert_eq!(Some(&0), lru_cache.get(&0));
+        thread::sleep(duration);
+        assert_eq!(Some(&0), lru_cache.peek(&0));
+        assert_eq!(vec![(&0, &0)], lru_cache.peek_iter().collect::<Vec<_>>());
+        thread::sleep(duration);
+        assert_eq!(None, lru_cache.peek(&0));
     }
 }
