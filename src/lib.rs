@@ -103,6 +103,7 @@ impl<'a, Key, Value> Iterator for PeekIterator<'a, Key, Value>
 {
     type Item = (&'a Key, &'a Value);
 
+    #[cfg_attr(feature="clippy", allow(while_let_on_iterator))]
     fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
         while let Some((key, &(ref value, _))) = self.map_iter.next() {
             if !self.lru_cache.expired(key) {
@@ -244,7 +245,7 @@ impl<Key, Value> LruCache<Key, Value>
         //     None => Entry::Vacant(VacantEntry{key: key, cache: self}),
         // }
         if self.contains_key(&key) {
-            Entry::Occupied(OccupiedEntry { value: self.get_mut(&key).unwrap() })
+            Entry::Occupied(OccupiedEntry { value: self.get_mut(&key).expect("key not found") })
         } else {
             Entry::Vacant(VacantEntry {
                 key: key,
@@ -341,7 +342,7 @@ impl<'a, Key: PartialOrd + Ord + Clone, Value> VacantEntry<'a, Key, Value> {
     /// Inserts a value
     pub fn insert(self, value: Value) -> &'a mut Value {
         let _ = self.cache.insert(self.key.clone(), value);
-        self.cache.get_mut(&self.key).unwrap()
+        self.cache.get_mut(&self.key).expect("key not found")
     }
 }
 
@@ -483,15 +484,15 @@ mod test {
         assert_eq!(lru_cache.len(), 1);
     }
 
+    #[derive(PartialEq, PartialOrd, Ord, Clone, Eq)]
+    struct Temp {
+        id: Vec<u8>,
+    }
+
     #[test]
     fn time_size_struct_value() {
         let size = 100usize;
         let time_to_live = Duration::from_millis(100);
-
-        #[derive(PartialEq, PartialOrd, Ord, Clone, Eq)]
-        struct Temp {
-            id: Vec<u8>,
-        }
 
         let mut lru_cache =
             super::LruCache::<Temp, usize>::with_expiry_duration_and_capacity(time_to_live, size);
@@ -552,6 +553,31 @@ mod test {
     }
 
     #[test]
+    fn peek_iter() {
+        let time_to_live = Duration::from_millis(50);
+        let duration = Duration::from_millis(30);
+        let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+
+        let _ = lru_cache.insert(0, 0);
+        let _ = lru_cache.insert(2, 2);
+        let _ = lru_cache.insert(3, 3);
+
+        thread::sleep(duration);
+        assert_eq!(vec![(&0, &0), (&2, &2), (&3, &3)],
+                   lru_cache.peek_iter().collect::<Vec<_>>());
+        assert_eq!(Some(&2), lru_cache.get(&2));
+        let _ = lru_cache.insert(1, 1);
+        let _ = lru_cache.insert(4, 4);
+
+        thread::sleep(duration);
+        assert_eq!(vec![(&1, &1), (&2, &2), (&4, &4)],
+                   lru_cache.peek_iter().collect::<Vec<_>>());
+
+        thread::sleep(duration);
+        assert!(lru_cache.is_empty());
+    }
+
+    #[test]
     fn update_time_check() {
         let time_to_live = Duration::from_millis(50);
         let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
@@ -565,7 +591,6 @@ mod test {
         assert_eq!(Some(&0), lru_cache.get(&0));
         thread::sleep(duration);
         assert_eq!(Some(&0), lru_cache.peek(&0));
-        assert_eq!(vec![(&0, &0)], lru_cache.peek_iter().collect::<Vec<_>>());
         thread::sleep(duration);
         assert_eq!(None, lru_cache.peek(&0));
     }
