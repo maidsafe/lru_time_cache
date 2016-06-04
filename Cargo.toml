@@ -1,9 +1,9 @@
 [package]
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Implementation of a Least Recently Used caching algorithm in a container which may be limited by size or time, ordered by most recently seen."
-documentation = "http://maidsafe.net/lru_time_cache/latest"
+documentation = "http://docs.maidsafe.net/lru_time_cache/latest"
 homepage = "http://maidsafe.net"
-license = "GPL-3.0"
+license = "GPL-3.0/MaidSafe.net Commercial License 1.0"
 name = "lru_time_cache"
 readme = "README.md"
 repository = "https://github.com/maidsafe/lru_time_cache"
