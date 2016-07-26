@@ -92,6 +92,29 @@ pub struct OccupiedEntry<'a, Value: 'a> {
     value: &'a mut Value,
 }
 
+/// An iterator over an `LruCache`'s entries that updates the timestamps as values are traversed.
+pub struct LruCacheIterator<'a, Key: 'a, Value: 'a> {
+    map_iter_mut: btree_map::IterMut<'a, Key, (Value, Instant)>,
+    has_expiry: bool,
+    lru_cache_ttl: Duration
+}
+
+impl<'a, Key, Value> Iterator for LruCacheIterator<'a, Key, Value> {
+    type Item = (&'a Key, &'a Value);
+
+    #[cfg_attr(feature="clippy", allow(while_let_on_iterator))]
+    fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
+        let now = Instant::now();
+        while let Some((key, &mut (ref value, ref mut instant))) = self.map_iter_mut.next() {
+            if !self.has_expiry || *instant + self.lru_cache_ttl > now {
+                *instant = now;
+                return Some((key, value));
+            }
+        }
+        None
+    }
+}
+
 /// An iterator over an `LruCache`'s entries that does not modify the timestamp.
 pub struct PeekIterator<'a, Key: 'a, Value: 'a> {
     map_iter: btree_map::Iter<'a, Key, (Value, Instant)>,
@@ -251,6 +274,20 @@ impl<Key, Value> LruCache<Key, Value>
                 key: key,
                 cache: self,
             })
+        }
+    }
+
+    /// Returns an iterator over all entries that updates the timestamps as values are
+    /// traversed. Also removes expired elements before creating the iterator.
+    pub fn iter(&mut self) -> LruCacheIterator<Key, Value> {
+        self.remove_expired();
+
+        let has_expiry = self.has_expiry();
+
+        LruCacheIterator {
+            map_iter_mut: self.map.iter_mut(),
+            has_expiry: has_expiry,
+            lru_cache_ttl: self.time_to_live
         }
     }
 
