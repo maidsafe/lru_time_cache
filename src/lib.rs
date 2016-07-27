@@ -331,18 +331,11 @@ impl<Key, Value> LruCache<Key, Value>
 impl<Key: PartialOrd + Ord + Clone, Value: Clone> LruCache<Key, Value> {
     /// Returns a clone of all elements as an unordered vector of key-value tuples.  Also removes
     /// expired elements and updates the time.
-    // FIXME: We should really just implement the `iter` function for this Cache object, let the
-    // user clone and collect the elements when needed.
     pub fn retrieve_all(&mut self) -> Vec<(Key, Value)> {
-        self.remove_expired();
-        let now = Instant::now();
-        let mut result = Vec::<(Key, Value)>::with_capacity(self.map.len());
-        self.map.iter_mut().all(|a| {
-            result.push((a.0.clone(), (a.1).0.clone()));
-            (a.1).1 = now;
-            true
-        });
-        result
+        self.iter().map(|e| {
+            let (k, v) = e;
+            (k.clone(), v.clone())
+        }).collect()
     }
 
     /// Returns a clone of all elements as a vector of key-value tuples ordered by most to least
