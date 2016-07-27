@@ -96,7 +96,7 @@ pub struct OccupiedEntry<'a, Value: 'a> {
 pub struct Iter<'a, Key: 'a, Value: 'a> {
     map_iter_mut: btree_map::IterMut<'a, Key, (Value, Instant)>,
     has_expiry: bool,
-    lru_cache_ttl: Duration
+    lru_cache_ttl: Duration,
 }
 
 impl<'a, Key, Value> Iterator for Iter<'a, Key, Value> {
@@ -287,7 +287,7 @@ impl<Key, Value> LruCache<Key, Value>
         Iter {
             map_iter_mut: self.map.iter_mut(),
             has_expiry: has_expiry,
-            lru_cache_ttl: self.time_to_live
+            lru_cache_ttl: self.time_to_live,
         }
     }
 
@@ -332,10 +332,12 @@ impl<Key: PartialOrd + Ord + Clone, Value: Clone> LruCache<Key, Value> {
     /// Returns a clone of all elements as an unordered vector of key-value tuples.  Also removes
     /// expired elements and updates the time.
     pub fn retrieve_all(&mut self) -> Vec<(Key, Value)> {
-        self.iter().map(|e| {
-            let (k, v) = e;
-            (k.clone(), v.clone())
-        }).collect()
+        self.iter()
+            .map(|e| {
+                let (k, v) = e;
+                (k.clone(), v.clone())
+            })
+            .collect()
     }
 
     /// Returns a clone of all elements as a vector of key-value tuples ordered by most to least
