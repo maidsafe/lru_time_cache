@@ -93,13 +93,13 @@ pub struct OccupiedEntry<'a, Value: 'a> {
 }
 
 /// An iterator over an `LruCache`'s entries that updates the timestamps as values are traversed.
-pub struct LruCacheIterator<'a, Key: 'a, Value: 'a> {
+pub struct Iter<'a, Key: 'a, Value: 'a> {
     map_iter_mut: btree_map::IterMut<'a, Key, (Value, Instant)>,
     has_expiry: bool,
     lru_cache_ttl: Duration
 }
 
-impl<'a, Key, Value> Iterator for LruCacheIterator<'a, Key, Value> {
+impl<'a, Key, Value> Iterator for Iter<'a, Key, Value> {
     type Item = (&'a Key, &'a Value);
 
     #[cfg_attr(feature="clippy", allow(while_let_on_iterator))]
@@ -116,12 +116,12 @@ impl<'a, Key, Value> Iterator for LruCacheIterator<'a, Key, Value> {
 }
 
 /// An iterator over an `LruCache`'s entries that does not modify the timestamp.
-pub struct PeekIterator<'a, Key: 'a, Value: 'a> {
+pub struct PeekIter<'a, Key: 'a, Value: 'a> {
     map_iter: btree_map::Iter<'a, Key, (Value, Instant)>,
     lru_cache: &'a LruCache<Key, Value>,
 }
 
-impl<'a, Key, Value> Iterator for PeekIterator<'a, Key, Value>
+impl<'a, Key, Value> Iterator for PeekIter<'a, Key, Value>
     where Key: PartialOrd + Ord + Clone
 {
     type Item = (&'a Key, &'a Value);
@@ -279,12 +279,12 @@ impl<Key, Value> LruCache<Key, Value>
 
     /// Returns an iterator over all entries that updates the timestamps as values are
     /// traversed. Also removes expired elements before creating the iterator.
-    pub fn iter(&mut self) -> LruCacheIterator<Key, Value> {
+    pub fn iter(&mut self) -> Iter<Key, Value> {
         self.remove_expired();
 
         let has_expiry = self.has_expiry();
 
-        LruCacheIterator {
+        Iter {
             map_iter_mut: self.map.iter_mut(),
             has_expiry: has_expiry,
             lru_cache_ttl: self.time_to_live
@@ -292,8 +292,8 @@ impl<Key, Value> LruCache<Key, Value>
     }
 
     /// Returns an iterator over all entries that does not modify the timestamps.
-    pub fn peek_iter(&self) -> PeekIterator<Key, Value> {
-        PeekIterator {
+    pub fn peek_iter(&self) -> PeekIter<Key, Value> {
+        PeekIter {
             map_iter: self.map.iter(),
             lru_cache: self,
         }
