@@ -95,11 +95,14 @@ pub struct OccupiedEntry<'a, Value: 'a> {
 /// An iterator over an `LruCache`'s entries that updates the timestamps as values are traversed.
 pub struct Iter<'a, Key: 'a, Value: 'a> {
     map_iter_mut: btree_map::IterMut<'a, Key, (Value, Instant)>,
+    list: &'a mut VecDeque<Key>,
     has_expiry: bool,
     lru_cache_ttl: Duration,
 }
 
-impl<'a, Key, Value> Iterator for Iter<'a, Key, Value> {
+impl<'a, Key, Value> Iterator for Iter<'a, Key, Value>
+    where Key: PartialOrd + Ord + Clone
+{
     type Item = (&'a Key, &'a Value);
 
     #[cfg_attr(feature="clippy", allow(while_let_on_iterator))]
@@ -107,6 +110,7 @@ impl<'a, Key, Value> Iterator for Iter<'a, Key, Value> {
         let now = Instant::now();
         while let Some((key, &mut (ref value, ref mut instant))) = self.map_iter_mut.next() {
             if !self.has_expiry || *instant + self.lru_cache_ttl > now {
+                LruCache::<Key, Value>::update_key(self.list, key);
                 *instant = now;
                 return Some((key, value));
             }
@@ -286,6 +290,7 @@ impl<Key, Value> LruCache<Key, Value>
 
         Iter {
             map_iter_mut: self.map.iter_mut(),
+            list: &mut self.list,
             has_expiry: has_expiry,
             lru_cache_ttl: self.time_to_live,
         }
