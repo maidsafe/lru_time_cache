@@ -590,6 +590,30 @@ mod test {
     }
 
     #[test]
+    fn iter() {
+        let mut lru_cache = super::LruCache::<usize, usize>::with_capacity(3);
+
+        let _ = lru_cache.insert(0, 0);
+        let _ = lru_cache.insert(1, 1);
+        let _ = lru_cache.insert(2, 2);
+
+        assert_eq!(vec![(&0, &0), (&1, &1), (&2, &2)],
+                   lru_cache.iter().collect::<Vec<_>>());
+
+        let initial_instant0 = lru_cache.map.get(&0).unwrap().1;
+        let initial_instant2 = lru_cache.map.get(&2).unwrap().1;
+
+        // only the first two entries should have their timestamp updated (and position in list)
+        let _ = lru_cache.iter().take(2).all(|_| true);
+
+        assert!(lru_cache.map.get(&0).unwrap().1 != initial_instant0);
+        assert_eq!(lru_cache.map.get(&2).unwrap().1, initial_instant2);
+
+        assert_eq!(*lru_cache.list.front().unwrap(), 2);
+        assert_eq!(*lru_cache.list.back().unwrap(), 1);
+    }
+
+    #[test]
     fn peek_iter() {
         let time_to_live = Duration::from_millis(50);
         let duration = Duration::from_millis(30);
