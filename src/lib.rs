@@ -92,13 +92,40 @@ pub struct OccupiedEntry<'a, Value: 'a> {
     value: &'a mut Value,
 }
 
+/// An iterator over an `LruCache`'s entries that updates the timestamps as values are traversed.
+pub struct Iter<'a, Key: 'a, Value: 'a> {
+    map_iter_mut: btree_map::IterMut<'a, Key, (Value, Instant)>,
+    list: &'a mut VecDeque<Key>,
+    has_expiry: bool,
+    lru_cache_ttl: Duration,
+}
+
+impl<'a, Key, Value> Iterator for Iter<'a, Key, Value>
+    where Key: PartialOrd + Ord + Clone
+{
+    type Item = (&'a Key, &'a Value);
+
+    #[cfg_attr(feature="clippy", allow(while_let_on_iterator))]
+    fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
+        let now = Instant::now();
+        while let Some((key, &mut (ref value, ref mut instant))) = self.map_iter_mut.next() {
+            if !self.has_expiry || *instant + self.lru_cache_ttl > now {
+                LruCache::<Key, Value>::update_key(self.list, key);
+                *instant = now;
+                return Some((key, value));
+            }
+        }
+        None
+    }
+}
+
 /// An iterator over an `LruCache`'s entries that does not modify the timestamp.
-pub struct PeekIterator<'a, Key: 'a, Value: 'a> {
+pub struct PeekIter<'a, Key: 'a, Value: 'a> {
     map_iter: btree_map::Iter<'a, Key, (Value, Instant)>,
     lru_cache: &'a LruCache<Key, Value>,
 }
 
-impl<'a, Key, Value> Iterator for PeekIterator<'a, Key, Value>
+impl<'a, Key, Value> Iterator for PeekIter<'a, Key, Value>
     where Key: PartialOrd + Ord + Clone
 {
     type Item = (&'a Key, &'a Value);
@@ -254,9 +281,24 @@ impl<Key, Value> LruCache<Key, Value>
         }
     }
 
+    /// Returns an iterator over all entries that updates the timestamps as values are
+    /// traversed. Also removes expired elements before creating the iterator.
+    pub fn iter(&mut self) -> Iter<Key, Value> {
+        self.remove_expired();
+
+        let has_expiry = self.has_expiry();
+
+        Iter {
+            map_iter_mut: self.map.iter_mut(),
+            list: &mut self.list,
+            has_expiry: has_expiry,
+            lru_cache_ttl: self.time_to_live,
+        }
+    }
+
     /// Returns an iterator over all entries that does not modify the timestamps.
-    pub fn peek_iter(&self) -> PeekIterator<Key, Value> {
-        PeekIterator {
+    pub fn peek_iter(&self) -> PeekIter<Key, Value> {
+        PeekIter {
             map_iter: self.map.iter(),
             lru_cache: self,
         }
@@ -294,18 +336,13 @@ impl<Key, Value> LruCache<Key, Value>
 impl<Key: PartialOrd + Ord + Clone, Value: Clone> LruCache<Key, Value> {
     /// Returns a clone of all elements as an unordered vector of key-value tuples.  Also removes
     /// expired elements and updates the time.
-    // FIXME: We should really just implement the `iter` function for this Cache object, let the
-    // user clone and collect the elements when needed.
     pub fn retrieve_all(&mut self) -> Vec<(Key, Value)> {
-        self.remove_expired();
-        let now = Instant::now();
-        let mut result = Vec::<(Key, Value)>::with_capacity(self.map.len());
-        self.map.iter_mut().all(|a| {
-            result.push((a.0.clone(), (a.1).0.clone()));
-            (a.1).1 = now;
-            true
-        });
-        result
+        self.iter()
+            .map(|e| {
+                let (k, v) = e;
+                (k.clone(), v.clone())
+            })
+            .collect()
     }
 
     /// Returns a clone of all elements as a vector of key-value tuples ordered by most to least
@@ -550,6 +587,30 @@ mod test {
             lru_cache.remove_oldest_element();
             assert!(!lru_cache.contains_key(&i.0) && lru_cache.get(&i.0).is_none());
         }
+    }
+
+    #[test]
+    fn iter() {
+        let mut lru_cache = super::LruCache::<usize, usize>::with_capacity(3);
+
+        let _ = lru_cache.insert(0, 0);
+        let _ = lru_cache.insert(1, 1);
+        let _ = lru_cache.insert(2, 2);
+
+        assert_eq!(vec![(&0, &0), (&1, &1), (&2, &2)],
+                   lru_cache.iter().collect::<Vec<_>>());
+
+        let initial_instant0 = lru_cache.map.get(&0).unwrap().1;
+        let initial_instant2 = lru_cache.map.get(&2).unwrap().1;
+
+        // only the first two entries should have their timestamp updated (and position in list)
+        let _ = lru_cache.iter().take(2).all(|_| true);
+
+        assert!(lru_cache.map.get(&0).unwrap().1 != initial_instant0);
+        assert_eq!(lru_cache.map.get(&2).unwrap().1, initial_instant2);
+
+        assert_eq!(*lru_cache.list.front().unwrap(), 2);
+        assert_eq!(*lru_cache.list.back().unwrap(), 1);
     }
 
     #[test]
