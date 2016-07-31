@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["Entry","A view into a single entry in an LRU cache, which may either be vacant or occupied."]],"struct":[["LruCache","Implementation of LRU cache."],["OccupiedEntry","An occupied Entry."],["PeekIterator","An iterator over an `LruCache`'s entries that does not modify the timestamp."],["VacantEntry","A vacant Entry."]]});
