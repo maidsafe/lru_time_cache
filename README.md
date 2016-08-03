@@ -13,12 +13,6 @@
 
 Implementation of a Least Recently Used [caching algorithm](http://en.wikipedia.org/wiki/Cache_algorithms) in a container which may be limited by size or time, ordered by most recently seen.
 
-## Todo Items
-
-### [0.3.0] More API changes
-- [ ] Implement `iter` function
-- [ ] Remove `retrieve_all` function (in favour of the above)
-
 ## License
 
 Licensed under either of
