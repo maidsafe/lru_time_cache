@@ -63,7 +63,7 @@
 
 #![cfg_attr(feature="clippy", feature(plugin))]
 #![cfg_attr(feature="clippy", plugin(clippy))]
-#![cfg_attr(feature="clippy", deny(clippy, clippy_pedantic))]
+#![cfg_attr(feature="clippy", deny(clippy))]
 #![cfg_attr(feature="clippy", allow(use_debug))]
 
 #[cfg(test)]
@@ -333,34 +333,6 @@ impl<Key, Value> LruCache<Key, Value>
     }
 }
 
-impl<Key: PartialOrd + Ord + Clone, Value: Clone> LruCache<Key, Value> {
-    /// Returns a clone of all elements as an unordered vector of key-value tuples.  Also removes
-    /// expired elements and updates the time.
-    pub fn retrieve_all(&mut self) -> Vec<(Key, Value)> {
-        self.iter()
-            .map(|e| {
-                let (k, v) = e;
-                (k.clone(), v.clone())
-            })
-            .collect()
-    }
-
-    /// Returns a clone of all elements as a vector of key-value tuples ordered by most to least
-    /// recently updated.  Also removes expired elements and updates the time.
-    pub fn retrieve_all_ordered(&mut self) -> Vec<(Key, Value)> {
-        self.remove_expired();
-        let now = Instant::now();
-        let mut result = Vec::<(Key, Value)>::with_capacity(self.list.len());
-        for key in self.list.iter().rev() {
-            if let Some(value) = self.map.get_mut(key) {
-                result.push((key.clone(), value.0.clone()));
-                value.1 = now;
-            }
-        }
-        result
-    }
-}
-
 impl<Key, Value> Clone for LruCache<Key, Value>
     where Key: Clone,
           Value: Clone
@@ -553,40 +525,6 @@ mod test {
         let _ = lru_cache.insert(Temp { id: generate_random_vec::<u8>(64) }, 1);
 
         assert_eq!(lru_cache.len(), 1);
-    }
-
-    #[test]
-    fn retrieve_all() {
-        let size = 10usize;
-        let mut lru_cache = super::LruCache::<usize, usize>::with_capacity(size);
-
-        for i in 0..10 {
-            let _ = lru_cache.insert(i, i);
-        }
-
-        let all = lru_cache.retrieve_all();
-        assert_eq!(all.len(), lru_cache.map.len());
-
-        assert!(all.iter()
-            .all(|a| lru_cache.contains_key(&a.0) && *lru_cache.get(&a.0).unwrap() == a.1));
-    }
-
-    #[test]
-    fn retrieve_all_ordered() {
-        let size = 10usize;
-        let mut lru_cache = super::LruCache::<usize, usize>::with_capacity(size);
-
-        for i in 0..10 {
-            let _ = lru_cache.insert(i, i);
-        }
-
-        let all = lru_cache.retrieve_all_ordered();
-        assert_eq!(all.len(), lru_cache.map.len());
-
-        for i in all.iter().rev() {
-            lru_cache.remove_oldest_element();
-            assert!(!lru_cache.contains_key(&i.0) && lru_cache.get(&i.0).is_none());
-        }
     }
 
     #[test]
