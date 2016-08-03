@@ -11,6 +11,7 @@
 
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
+    
 
     <link rel="shortcut icon" href="http://maidsafe.net/img/favicon.ico">
     
@@ -43,10 +44,10 @@
 
     <section id='main' class="content mod">
 <h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>lru_time_cache</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-0' class='srclink' href='../src/lru_time_cache/src/lib.rs.html#18-572' title='goto source code'>[src]</a></span></h1>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-0' class='srclink' href='../src/lru_time_cache/src/lib.rs.html#18-596' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'>
 <h1 id='least-recently-used-lru-cache' class='section-header'><a href='#least-recently-used-lru-cache'>Least Recently Used (LRU) Cache</a></h1>
 <p>Implementation of a Least Recently Used
@@ -71,47 +72,49 @@ limited by size or time, ordered by most recently seen.</p>
                                                                             <span class='ident'>max_count</span>);</pre>
 </div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.LruCache.html'
-                               title='lru_time_cache::LruCache'>LruCache</a></td>
-                        <td class='docblock short'>
-                             <p>Implementation of <a href="index.html#least-recently-used-lru-cache">LRU cache</a>.</p>
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.OccupiedEntry.html'
-                               title='lru_time_cache::OccupiedEntry'>OccupiedEntry</a></td>
-                        <td class='docblock short'>
-                             <p>An occupied Entry.</p>
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.PeekIterator.html'
-                               title='lru_time_cache::PeekIterator'>PeekIterator</a></td>
-                        <td class='docblock short'>
-                             <p>An iterator over an <code>LruCache</code>&#39;s entries that does not modify the timestamp.</p>
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.VacantEntry.html'
-                               title='lru_time_cache::VacantEntry'>VacantEntry</a></td>
-                        <td class='docblock short'>
-                             <p>A vacant Entry.</p>
-                        </td>
-                    </tr>
-                </table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.Iter.html'
+                                  title='lru_time_cache::Iter'>Iter</a></td>
+                           <td class='docblock short'>
+                                <p>An iterator over an <code>LruCache</code>&#39;s entries that updates the timestamps as values are traversed.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.LruCache.html'
+                                  title='lru_time_cache::LruCache'>LruCache</a></td>
+                           <td class='docblock short'>
+                                <p>Implementation of <a href="index.html#least-recently-used-lru-cache">LRU cache</a>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.OccupiedEntry.html'
+                                  title='lru_time_cache::OccupiedEntry'>OccupiedEntry</a></td>
+                           <td class='docblock short'>
+                                <p>An occupied Entry.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.PeekIter.html'
+                                  title='lru_time_cache::PeekIter'>PeekIter</a></td>
+                           <td class='docblock short'>
+                                <p>An iterator over an <code>LruCache</code>&#39;s entries that does not modify the timestamp.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.VacantEntry.html'
+                                  title='lru_time_cache::VacantEntry'>VacantEntry</a></td>
+                           <td class='docblock short'>
+                                <p>A vacant Entry.</p>
+                           </td>
+                       </tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='enum' href='enum.Entry.html'
-                               title='lru_time_cache::Entry'>Entry</a></td>
-                        <td class='docblock short'>
-                             <p>A view into a single entry in an LRU cache, which may either be vacant or occupied.</p>
-                        </td>
-                    </tr>
-                </table></section>
+                       <tr class=' module-item'>
+                           <td><a class='enum' href='enum.Entry.html'
+                                  title='lru_time_cache::Entry'>Entry</a></td>
+                           <td class='docblock short'>
+                                <p>A view into a single entry in an LRU cache, which may either be vacant or occupied.</p>
+                           </td>
+                       </tr></table></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -134,6 +137,8 @@ limited by size or time, ordered by most recently seen.</p>
                     <dd>Move down in search results</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>
 
