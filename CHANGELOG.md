@@ -1,5 +1,8 @@
 # Lru Time Cache - Change Log
 
+## [0.5.0]
+- Add `iter` and remove obsolete `retrieve_all` methods.
+
 ## [0.4.0]
 - Add `clear`, `peek` and `peek_iter` methods.
 
