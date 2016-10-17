@@ -101,7 +101,7 @@ pub struct Iter<'a, Key: 'a, Value: 'a> {
 }
 
 impl<'a, Key, Value> Iterator for Iter<'a, Key, Value>
-    where Key: PartialOrd + Ord + Clone
+    where Key: Ord + Clone
 {
     type Item = (&'a Key, &'a Value);
 
@@ -126,7 +126,7 @@ pub struct PeekIter<'a, Key: 'a, Value: 'a> {
 }
 
 impl<'a, Key, Value> Iterator for PeekIter<'a, Key, Value>
-    where Key: PartialOrd + Ord + Clone
+    where Key: Ord + Clone
 {
     type Item = (&'a Key, &'a Value);
 
@@ -150,7 +150,7 @@ pub struct LruCache<Key, Value> {
 }
 
 impl<Key, Value> LruCache<Key, Value>
-    where Key: PartialOrd + Ord + Clone
+    where Key: Ord + Clone
 {
     /// Constructor for capacity based `LruCache`.
     pub fn with_capacity(capacity: usize) -> LruCache<Key, Value> {
@@ -347,7 +347,7 @@ impl<Key, Value> Clone for LruCache<Key, Value>
     }
 }
 
-impl<'a, Key: PartialOrd + Ord + Clone, Value> VacantEntry<'a, Key, Value> {
+impl<'a, Key: Ord + Clone, Value> VacantEntry<'a, Key, Value> {
     /// Inserts a value
     pub fn insert(self, value: Value) -> &'a mut Value {
         let _ = self.cache.insert(self.key.clone(), value);
@@ -362,7 +362,7 @@ impl<'a, Value> OccupiedEntry<'a, Value> {
     }
 }
 
-impl<'a, Key: PartialOrd + Ord + Clone, Value> Entry<'a, Key, Value> {
+impl<'a, Key: Ord + Clone, Value> Entry<'a, Key, Value> {
     /// Ensures a value is in the entry by inserting the default if empty, and returns
     /// a mutable reference to the value in the entry.
     pub fn or_insert(self, default: Value) -> &'a mut Value {
