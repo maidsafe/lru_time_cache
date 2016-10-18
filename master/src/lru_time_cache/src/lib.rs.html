@@ -638,6 +638,42 @@
 <span id="594">594</span>
 <span id="595">595</span>
 <span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
+<span id="617">617</span>
+<span id="618">618</span>
+<span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
+<span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
+<span id="631">631</span>
+<span id="632">632</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright 2015 MaidSafe.net limited.</span>
 <span class='comment'>//</span>
@@ -692,7 +728,7 @@
 <span class='comment'>// https://github.com/maidsafe/QA/blob/master/Documentation/Rust%20Lint%20Checks.md</span>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>forbid</span>(<span class='ident'>bad_style</span>, <span class='ident'>exceeding_bitshifts</span>, <span class='ident'>mutable_transmutes</span>, <span class='ident'>no_mangle_const_items</span>,
           <span class='ident'>unknown_crate_types</span>, <span class='ident'>warnings</span>)]</span>
-<span class='attribute'>#<span class='op'>!</span>[<span class='ident'>deny</span>(<span class='ident'>deprecated</span>, <span class='ident'>drop_with_repr_extern</span>, <span class='ident'>improper_ctypes</span>, <span class='ident'>missing_docs</span>,
+<span class='attribute'>#<span class='op'>!</span>[<span class='ident'>deny</span>(<span class='ident'>deprecated</span>, <span class='ident'>improper_ctypes</span>, <span class='ident'>missing_docs</span>,
         <span class='ident'>non_shorthand_field_patterns</span>, <span class='ident'>overflowing_literals</span>, <span class='ident'>plugin_as_library</span>,
         <span class='ident'>private_no_mangle_fns</span>, <span class='ident'>private_no_mangle_statics</span>, <span class='ident'>stable_features</span>, <span class='ident'>unconditional_recursion</span>,
         <span class='ident'>unknown_lints</span>, <span class='ident'>unsafe_code</span>, <span class='ident'>unused</span>, <span class='ident'>unused_allocation</span>, <span class='ident'>unused_attributes</span>,
@@ -710,6 +746,7 @@
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span>
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>rand</span>;
 
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>borrow</span>::<span class='ident'>Borrow</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>collections</span>::{<span class='ident'>BTreeMap</span>, <span class='ident'>VecDeque</span>};
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>collections</span>::<span class='ident'>btree_map</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>time</span>::{<span class='ident'>Instant</span>, <span class='ident'>Duration</span>};
@@ -742,7 +779,7 @@
 }
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span> <span class='ident'>Iterator</span> <span class='kw'>for</span> <span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span>
-    <span class='kw'>where</span> <span class='ident'>Key</span>: <span class='ident'>PartialOrd</span> <span class='op'>+</span> <span class='ident'>Ord</span> <span class='op'>+</span> <span class='ident'>Clone</span>
+    <span class='kw'>where</span> <span class='ident'>Key</span>: <span class='ident'>Ord</span> <span class='op'>+</span> <span class='ident'>Clone</span>
 {
     <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> (<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Key</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Value</span>);
 
@@ -767,7 +804,7 @@
 }
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span> <span class='ident'>Iterator</span> <span class='kw'>for</span> <span class='ident'>PeekIter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span>
-    <span class='kw'>where</span> <span class='ident'>Key</span>: <span class='ident'>PartialOrd</span> <span class='op'>+</span> <span class='ident'>Ord</span> <span class='op'>+</span> <span class='ident'>Clone</span>
+    <span class='kw'>where</span> <span class='ident'>Key</span>: <span class='ident'>Ord</span> <span class='op'>+</span> <span class='ident'>Clone</span>
 {
     <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> (<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Key</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Value</span>);
 
@@ -791,7 +828,7 @@
 }
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span> <span class='ident'>LruCache</span><span class='op'>&lt;</span><span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span>
-    <span class='kw'>where</span> <span class='ident'>Key</span>: <span class='ident'>PartialOrd</span> <span class='op'>+</span> <span class='ident'>Ord</span> <span class='op'>+</span> <span class='ident'>Clone</span>
+    <span class='kw'>where</span> <span class='ident'>Key</span>: <span class='ident'>Ord</span> <span class='op'>+</span> <span class='ident'>Clone</span>
 {
     <span class='doccomment'>/// Constructor for capacity based `LruCache`.</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>with_capacity</span>(<span class='ident'>capacity</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='ident'>LruCache</span><span class='op'>&lt;</span><span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span> {
@@ -843,8 +880,11 @@
     }
 
     <span class='doccomment'>/// Removes a key-value pair from the cache.</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>remove</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Key</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>Value</span><span class='op'>&gt;</span> {
-        <span class='self'>self</span>.<span class='ident'>list</span>.<span class='ident'>retain</span>(<span class='op'>|</span><span class='ident'>k</span><span class='op'>|</span> <span class='op'>*</span><span class='ident'>k</span> <span class='op'>&lt;</span> <span class='op'>*</span><span class='ident'>key</span> <span class='op'>||</span> <span class='op'>*</span><span class='ident'>k</span> <span class='op'>&gt;</span> <span class='op'>*</span><span class='ident'>key</span>);
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>remove</span><span class='op'>&lt;</span><span class='ident'>Q</span>: ?<span class='ident'>Sized</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Q</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>Value</span><span class='op'>&gt;</span>
+        <span class='kw'>where</span> <span class='ident'>Key</span>: <span class='ident'>Borrow</span><span class='op'>&lt;</span><span class='ident'>Q</span><span class='op'>&gt;</span>,
+              <span class='ident'>Q</span>: <span class='ident'>Ord</span>
+    {
+        <span class='self'>self</span>.<span class='ident'>list</span>.<span class='ident'>retain</span>(<span class='op'>|</span><span class='ident'>k</span><span class='op'>|</span> <span class='op'>*</span><span class='ident'>k</span>.<span class='ident'>borrow</span>() <span class='op'>&lt;</span> <span class='op'>*</span><span class='ident'>key</span> <span class='op'>||</span> <span class='op'>*</span><span class='ident'>k</span>.<span class='ident'>borrow</span>() <span class='op'>&gt;</span> <span class='op'>*</span><span class='ident'>key</span>);
         <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>remove</span>(<span class='ident'>key</span>).<span class='ident'>map</span>(<span class='op'>|</span>(<span class='ident'>value</span>, _)<span class='op'>|</span> <span class='ident'>value</span>)
     }
 
@@ -856,7 +896,10 @@
 
     <span class='doccomment'>/// Retrieves a reference to the value stored under `key`, or `None` if the key doesn&#39;t exist.</span>
     <span class='doccomment'>/// Also removes expired elements and updates the time.</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>get</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Key</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>Value</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>get</span><span class='op'>&lt;</span><span class='ident'>Q</span>: ?<span class='ident'>Sized</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Q</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>Value</span><span class='op'>&gt;</span>
+        <span class='kw'>where</span> <span class='ident'>Key</span>: <span class='ident'>Borrow</span><span class='op'>&lt;</span><span class='ident'>Q</span><span class='op'>&gt;</span>,
+              <span class='ident'>Q</span>: <span class='ident'>Ord</span>
+    {
         <span class='self'>self</span>.<span class='ident'>remove_expired</span>();
         <span class='kw'>let</span> <span class='ident'>list</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>.<span class='ident'>list</span>;
 
@@ -869,7 +912,10 @@
 
     <span class='doccomment'>/// Returns a reference to the value with the given `key`, if present and not expired, without</span>
     <span class='doccomment'>/// updating the timestamp.</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>peek</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Key</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>Value</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>peek</span><span class='op'>&lt;</span><span class='ident'>Q</span>: ?<span class='ident'>Sized</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Q</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='ident'>Value</span><span class='op'>&gt;</span>
+        <span class='kw'>where</span> <span class='ident'>Key</span>: <span class='ident'>Borrow</span><span class='op'>&lt;</span><span class='ident'>Q</span><span class='op'>&gt;</span>,
+              <span class='ident'>Q</span>: <span class='ident'>Ord</span>
+    {
         <span class='kw'>if</span> <span class='self'>self</span>.<span class='ident'>expired</span>(<span class='ident'>key</span>) {
             <span class='kw'>return</span> <span class='prelude-val'>None</span>;
         }
@@ -878,7 +924,10 @@
 
     <span class='doccomment'>/// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn&#39;t</span>
     <span class='doccomment'>/// exist.  Also removes expired elements and updates the time.</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>get_mut</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Key</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Value</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>get_mut</span><span class='op'>&lt;</span><span class='ident'>Q</span>: ?<span class='ident'>Sized</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Q</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Value</span><span class='op'>&gt;</span>
+        <span class='kw'>where</span> <span class='ident'>Key</span>: <span class='ident'>Borrow</span><span class='op'>&lt;</span><span class='ident'>Q</span><span class='op'>&gt;</span>,
+              <span class='ident'>Q</span>: <span class='ident'>Ord</span>
+    {
         <span class='self'>self</span>.<span class='ident'>remove_expired</span>();
         <span class='kw'>let</span> <span class='ident'>list</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>.<span class='ident'>list</span>;
 
@@ -890,7 +939,10 @@
     }
 
     <span class='doccomment'>/// Returns whether `key` exists in the cache or not.</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>contains_key</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Key</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>contains_key</span><span class='op'>&lt;</span><span class='ident'>Q</span>: ?<span class='ident'>Sized</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Q</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span>
+        <span class='kw'>where</span> <span class='ident'>Key</span>: <span class='ident'>Borrow</span><span class='op'>&lt;</span><span class='ident'>Q</span><span class='op'>&gt;</span>,
+              <span class='ident'>Q</span>: <span class='ident'>Ord</span>
+    {
         <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>contains_key</span>(<span class='ident'>key</span>) <span class='op'>&amp;&amp;</span> <span class='op'>!</span><span class='self'>self</span>.<span class='ident'>expired</span>(<span class='ident'>key</span>)
     }
 
@@ -949,9 +1001,12 @@
         <span class='self'>self</span>.<span class='ident'>time_to_live</span> <span class='op'>!=</span> <span class='ident'>Duration</span>::<span class='ident'>new</span>(<span class='ident'>std</span>::<span class='ident'>u64</span>::<span class='ident'>MAX</span>, <span class='number'>999_999_999</span>)
     }
 
-    <span class='kw'>fn</span> <span class='ident'>expired</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Key</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
+    <span class='kw'>fn</span> <span class='ident'>expired</span><span class='op'>&lt;</span><span class='ident'>Q</span>: ?<span class='ident'>Sized</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Q</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span>
+        <span class='kw'>where</span> <span class='ident'>Key</span>: <span class='ident'>Borrow</span><span class='op'>&lt;</span><span class='ident'>Q</span><span class='op'>&gt;</span>,
+              <span class='ident'>Q</span>: <span class='ident'>Ord</span>
+    {
         <span class='kw'>let</span> <span class='ident'>now</span> <span class='op'>=</span> <span class='ident'>Instant</span>::<span class='ident'>now</span>();
-        <span class='self'>self</span>.<span class='ident'>has_expiry</span>() <span class='op'>&amp;&amp;</span> <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>get</span>(<span class='ident'>key</span>).<span class='ident'>map_or</span>(<span class='boolvalue'>false</span>, <span class='op'>|</span><span class='ident'>v</span><span class='op'>|</span> <span class='ident'>v</span>.<span class='number'>1</span> <span class='op'>+</span> <span class='self'>self</span>.<span class='ident'>time_to_live</span> <span class='op'>&lt;</span> <span class='ident'>now</span>)
+        <span class='self'>self</span>.<span class='ident'>has_expiry</span>() <span class='op'>&amp;&amp;</span> <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>get</span>(<span class='ident'>key</span>).<span class='ident'>map_or</span>(<span class='bool-val'>false</span>, <span class='op'>|</span><span class='ident'>v</span><span class='op'>|</span> <span class='ident'>v</span>.<span class='number'>1</span> <span class='op'>+</span> <span class='self'>self</span>.<span class='ident'>time_to_live</span> <span class='op'>&lt;</span> <span class='ident'>now</span>)
     }
 
     <span class='kw'>fn</span> <span class='ident'>remove_oldest_element</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) {
@@ -959,12 +1014,18 @@
     }
 
     <span class='kw'>fn</span> <span class='ident'>check_time_expired</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
-        <span class='self'>self</span>.<span class='ident'>has_expiry</span>() <span class='op'>&amp;&amp;</span> <span class='self'>self</span>.<span class='ident'>list</span>.<span class='ident'>front</span>().<span class='ident'>map_or</span>(<span class='boolvalue'>false</span>, <span class='op'>|</span><span class='ident'>key</span><span class='op'>|</span> <span class='self'>self</span>.<span class='ident'>expired</span>(<span class='ident'>key</span>))
+        <span class='self'>self</span>.<span class='ident'>has_expiry</span>() <span class='op'>&amp;&amp;</span> <span class='self'>self</span>.<span class='ident'>list</span>.<span class='ident'>front</span>().<span class='ident'>map_or</span>(<span class='bool-val'>false</span>, <span class='op'>|</span><span class='ident'>key</span><span class='op'>|</span> <span class='self'>self</span>.<span class='ident'>expired</span>(<span class='ident'>key</span>))
     }
 
-    <span class='kw'>fn</span> <span class='ident'>update_key</span>(<span class='ident'>list</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>VecDeque</span><span class='op'>&lt;</span><span class='ident'>Key</span><span class='op'>&gt;</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Key</span>) {
-        <span class='ident'>list</span>.<span class='ident'>retain</span>(<span class='op'>|</span><span class='ident'>k</span><span class='op'>|</span> <span class='op'>*</span><span class='ident'>k</span> <span class='op'>&lt;</span> <span class='op'>*</span><span class='ident'>key</span> <span class='op'>||</span> <span class='op'>*</span><span class='ident'>k</span> <span class='op'>&gt;</span> <span class='op'>*</span><span class='ident'>key</span>);
-        <span class='ident'>list</span>.<span class='ident'>push_back</span>(<span class='ident'>key</span>.<span class='ident'>clone</span>());
+    <span class='comment'>// Move `key` in the ordered list to the last</span>
+    <span class='kw'>fn</span> <span class='ident'>update_key</span><span class='op'>&lt;</span><span class='ident'>Q</span>: ?<span class='ident'>Sized</span><span class='op'>&gt;</span>(<span class='ident'>list</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>VecDeque</span><span class='op'>&lt;</span><span class='ident'>Key</span><span class='op'>&gt;</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>Q</span>)
+        <span class='kw'>where</span> <span class='ident'>Key</span>: <span class='ident'>Borrow</span><span class='op'>&lt;</span><span class='ident'>Q</span><span class='op'>&gt;</span>,
+              <span class='ident'>Q</span>: <span class='ident'>Ord</span>
+    {
+        <span class='kw'>if</span> <span class='kw'>let</span> <span class='prelude-val'>Some</span>(<span class='ident'>pos</span>) <span class='op'>=</span> <span class='ident'>list</span>.<span class='ident'>iter</span>().<span class='ident'>position</span>(<span class='op'>|</span><span class='ident'>k</span><span class='op'>|</span> <span class='ident'>k</span>.<span class='ident'>borrow</span>() <span class='op'>==</span> <span class='ident'>key</span>) {
+            <span class='kw'>let</span> <span class='ident'>k</span> <span class='op'>=</span> <span class='ident'>list</span>.<span class='ident'>remove</span>(<span class='ident'>pos</span>).<span class='ident'>unwrap</span>();
+            <span class='ident'>list</span>.<span class='ident'>push_back</span>(<span class='ident'>k</span>);
+        }
     }
 
     <span class='kw'>fn</span> <span class='ident'>remove_expired</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) {
@@ -988,7 +1049,7 @@
     }
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>: <span class='ident'>PartialOrd</span> <span class='op'>+</span> <span class='ident'>Ord</span> <span class='op'>+</span> <span class='ident'>Clone</span>, <span class='ident'>Value</span><span class='op'>&gt;</span> <span class='ident'>VacantEntry</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>: <span class='ident'>Ord</span> <span class='op'>+</span> <span class='ident'>Clone</span>, <span class='ident'>Value</span><span class='op'>&gt;</span> <span class='ident'>VacantEntry</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span> {
     <span class='doccomment'>/// Inserts a value</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>insert</span>(<span class='self'>self</span>, <span class='ident'>value</span>: <span class='ident'>Value</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='kw-2'>mut</span> <span class='ident'>Value</span> {
         <span class='kw'>let</span> _ <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>cache</span>.<span class='ident'>insert</span>(<span class='self'>self</span>.<span class='ident'>key</span>.<span class='ident'>clone</span>(), <span class='ident'>value</span>);
@@ -1003,7 +1064,7 @@
     }
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>: <span class='ident'>PartialOrd</span> <span class='op'>+</span> <span class='ident'>Ord</span> <span class='op'>+</span> <span class='ident'>Clone</span>, <span class='ident'>Value</span><span class='op'>&gt;</span> <span class='ident'>Entry</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>: <span class='ident'>Ord</span> <span class='op'>+</span> <span class='ident'>Clone</span>, <span class='ident'>Value</span><span class='op'>&gt;</span> <span class='ident'>Entry</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Key</span>, <span class='ident'>Value</span><span class='op'>&gt;</span> {
     <span class='doccomment'>/// Ensures a value is in the entry by inserting the default if empty, and returns</span>
     <span class='doccomment'>/// a mutable reference to the value in the entry.</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>or_insert</span>(<span class='self'>self</span>, <span class='ident'>default</span>: <span class='ident'>Value</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='kw-2'>mut</span> <span class='ident'>Value</span> {
@@ -1183,7 +1244,7 @@
         <span class='kw'>let</span> <span class='ident'>initial_instant2</span> <span class='op'>=</span> <span class='ident'>lru_cache</span>.<span class='ident'>map</span>.<span class='ident'>get</span>(<span class='kw-2'>&amp;</span><span class='number'>2</span>).<span class='ident'>unwrap</span>().<span class='number'>1</span>;
 
         <span class='comment'>// only the first two entries should have their timestamp updated (and position in list)</span>
-        <span class='kw'>let</span> _ <span class='op'>=</span> <span class='ident'>lru_cache</span>.<span class='ident'>iter</span>().<span class='ident'>take</span>(<span class='number'>2</span>).<span class='ident'>all</span>(<span class='op'>|</span>_<span class='op'>|</span> <span class='boolvalue'>true</span>);
+        <span class='kw'>let</span> _ <span class='op'>=</span> <span class='ident'>lru_cache</span>.<span class='ident'>iter</span>().<span class='ident'>take</span>(<span class='number'>2</span>).<span class='ident'>all</span>(<span class='op'>|</span>_<span class='op'>|</span> <span class='bool-val'>true</span>);
 
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>lru_cache</span>.<span class='ident'>map</span>.<span class='ident'>get</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>).<span class='ident'>unwrap</span>().<span class='number'>1</span> <span class='op'>!=</span> <span class='ident'>initial_instant0</span>);
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>lru_cache</span>.<span class='ident'>map</span>.<span class='ident'>get</span>(<span class='kw-2'>&amp;</span><span class='number'>2</span>).<span class='ident'>unwrap</span>().<span class='number'>1</span>, <span class='ident'>initial_instant2</span>);
@@ -1233,6 +1294,17 @@
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>), <span class='ident'>lru_cache</span>.<span class='ident'>peek</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>));
         <span class='ident'>thread</span>::<span class='ident'>sleep</span>(<span class='ident'>duration</span>);
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='prelude-val'>None</span>, <span class='ident'>lru_cache</span>.<span class='ident'>peek</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>));
+    }
+
+    <span class='attribute'>#[<span class='ident'>test</span>]</span>
+    <span class='kw'>fn</span> <span class='ident'>deref_coercions</span>() {
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>lru_cache</span> <span class='op'>=</span> <span class='kw'>super</span>::<span class='ident'>LruCache</span>::<span class='op'>&lt;</span><span class='ident'>String</span>, <span class='ident'>usize</span><span class='op'>&gt;</span>::<span class='ident'>with_capacity</span>(<span class='number'>1</span>);
+        <span class='kw'>let</span> _ <span class='op'>=</span> <span class='ident'>lru_cache</span>.<span class='ident'>insert</span>(<span class='string'>&quot;foo&quot;</span>.<span class='ident'>to_string</span>(), <span class='number'>0</span>);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='bool-val'>true</span>, <span class='ident'>lru_cache</span>.<span class='ident'>contains_key</span>(<span class='string'>&quot;foo&quot;</span>));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>), <span class='ident'>lru_cache</span>.<span class='ident'>get</span>(<span class='string'>&quot;foo&quot;</span>));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='number'>0</span>), <span class='ident'>lru_cache</span>.<span class='ident'>get_mut</span>(<span class='string'>&quot;foo&quot;</span>));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>), <span class='ident'>lru_cache</span>.<span class='ident'>peek</span>(<span class='string'>&quot;foo&quot;</span>));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='prelude-val'>Some</span>(<span class='number'>0</span>), <span class='ident'>lru_cache</span>.<span class='ident'>remove</span>(<span class='string'>&quot;foo&quot;</span>));
     }
 }
 </pre>

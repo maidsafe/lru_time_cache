@@ -47,19 +47,19 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-7' class='srclink' href='../src/lru_time_cache/src/lib.rs.html#77-82' title='goto source code'>[src]</a></span></h1>
-<pre class='rust enum'>pub enum Entry&lt;'a, Key: 'a, Value: 'a&gt; {
-    Vacant(<a class='struct' href='../lru_time_cache/struct.VacantEntry.html' title='lru_time_cache::VacantEntry'>VacantEntry</a>&lt;'a, Key, Value&gt;),
-    Occupied(<a class='struct' href='../lru_time_cache/struct.OccupiedEntry.html' title='lru_time_cache::OccupiedEntry'>OccupiedEntry</a>&lt;'a, Value&gt;),
+               </span><a id='src-8' class='srclink' href='../src/lru_time_cache/src/lib.rs.html#78-83' title='goto source code'>[src]</a></span></h1>
+<pre class='rust enum'>pub enum Entry&lt;'a,&nbsp;Key:&nbsp;'a,&nbsp;Value:&nbsp;'a&gt; {
+    Vacant(<a class='struct' href='../lru_time_cache/struct.VacantEntry.html' title='lru_time_cache::VacantEntry'>VacantEntry</a>&lt;'a,&nbsp;Key,&nbsp;Value&gt;),
+    Occupied(<a class='struct' href='../lru_time_cache/struct.OccupiedEntry.html' title='lru_time_cache::OccupiedEntry'>OccupiedEntry</a>&lt;'a,&nbsp;Value&gt;),
 }</pre><div class='docblock'><p>A view into a single entry in an LRU cache, which may either be vacant or occupied.</p>
 </div><h2 class='variants'>Variants</h2>
-<table class='variants_table'><tr><td id='variant.Vacant'><code>Vacant</code></td><td><div class='docblock'><p>A vacant Entry</p>
-</div></td><td></td></tr><tr><td id='variant.Occupied'><code>Occupied</code></td><td><div class='docblock'><p>An occupied Entry</p>
-</div></td><td></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><span class='in-band'><code>impl&lt;'a, Key: <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.html' title='core::cmp::PartialOrd'>PartialOrd</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html' title='core::cmp::Ord'>Ord</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a>, Value&gt; <a class='enum' href='../lru_time_cache/enum.Entry.html' title='lru_time_cache::Entry'>Entry</a>&lt;'a, Key, Value&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a id='src-168' class='srclink' href='../src/lru_time_cache/src/lib.rs.html#365-383' title='goto source code'>[src]</a></span></h3>
+<span id='variant.Vacant' class='variant'><code>Vacant(<a class='struct' href='../lru_time_cache/struct.VacantEntry.html' title='lru_time_cache::VacantEntry'>VacantEntry</a>&lt;'a,&nbsp;Key,&nbsp;Value&gt;)</code></span><div class='docblock'><p>A vacant Entry</p>
+</div><span id='variant.Occupied' class='variant'><code>Occupied(<a class='struct' href='../lru_time_cache/struct.OccupiedEntry.html' title='lru_time_cache::OccupiedEntry'>OccupiedEntry</a>&lt;'a,&nbsp;Value&gt;)</code></span><div class='docblock'><p>An occupied Entry</p>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><span class='in-band'><code>impl&lt;'a,&nbsp;Key:&nbsp;<a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html' title='core::cmp::Ord'>Ord</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a>,&nbsp;Value&gt; <a class='enum' href='../lru_time_cache/enum.Entry.html' title='lru_time_cache::Entry'>Entry</a>&lt;'a,&nbsp;Key,&nbsp;Value&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a id='src-178' class='srclink' href='../src/lru_time_cache/src/lib.rs.html#390-408' title='goto source code'>[src]</a></span></h3>
 <div class='impl-items'><h4 id='method.or_insert' class='method'><code>fn <a href='#method.or_insert' class='fnname'>or_insert</a>(self, default: Value) -&gt; &amp;'a mut Value</code></h4>
 <div class='docblock'><p>Ensures a value is in the entry by inserting the default if empty, and returns
 a mutable reference to the value in the entry.</p>
-</div><h4 id='method.or_insert_with' class='method'><code>fn <a href='#method.or_insert_with' class='fnname'>or_insert_with</a>&lt;F: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.FnOnce.html' title='core::ops::FnOnce'>FnOnce</a>() -&gt; Value&gt;(self, default: F) -&gt; &amp;'a mut Value</code></h4>
+</div><h4 id='method.or_insert_with' class='method'><code>fn <a href='#method.or_insert_with' class='fnname'>or_insert_with</a>&lt;F:&nbsp;<a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.FnOnce.html' title='core::ops::FnOnce'>FnOnce</a>() -&gt; Value&gt;(self, default: F) -&gt; &amp;'a mut Value</code></h4>
 <div class='docblock'><p>Ensures a value is in the entry by inserting the result of the default function if empty,
 and returns a mutable reference to the value in the entry.</p>
 </div></div></section>
