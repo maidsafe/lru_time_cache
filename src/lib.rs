@@ -69,6 +69,7 @@
 #[cfg(test)]
 extern crate rand;
 
+use std::borrow::Borrow;
 use std::collections::{BTreeMap, VecDeque};
 use std::collections::btree_map;
 use std::time::{Instant, Duration};
@@ -202,8 +203,11 @@ impl<Key, Value> LruCache<Key, Value>
     }
 
     /// Removes a key-value pair from the cache.
-    pub fn remove(&mut self, key: &Key) -> Option<Value> {
-        self.list.retain(|k| *k < *key || *k > *key);
+    pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<Value>
+        where Key: Borrow<Q>,
+              Q: Ord
+    {
+        self.list.retain(|k| *k.borrow() < *key || *k.borrow() > *key);
         self.map.remove(key).map(|(value, _)| value)
     }
 
@@ -215,7 +219,10 @@ impl<Key, Value> LruCache<Key, Value>
 
     /// Retrieves a reference to the value stored under `key`, or `None` if the key doesn't exist.
     /// Also removes expired elements and updates the time.
-    pub fn get(&mut self, key: &Key) -> Option<&Value> {
+    pub fn get<Q: ?Sized>(&mut self, key: &Q) -> Option<&Value>
+        where Key: Borrow<Q>,
+              Q: Ord
+    {
         self.remove_expired();
         let list = &mut self.list;
 
@@ -228,7 +235,10 @@ impl<Key, Value> LruCache<Key, Value>
 
     /// Returns a reference to the value with the given `key`, if present and not expired, without
     /// updating the timestamp.
-    pub fn peek(&self, key: &Key) -> Option<&Value> {
+    pub fn peek<Q: ?Sized>(&self, key: &Q) -> Option<&Value>
+        where Key: Borrow<Q>,
+              Q: Ord
+    {
         if self.expired(key) {
             return None;
         }
@@ -237,7 +247,10 @@ impl<Key, Value> LruCache<Key, Value>
 
     /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
     /// exist.  Also removes expired elements and updates the time.
-    pub fn get_mut(&mut self, key: &Key) -> Option<&mut Value> {
+    pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut Value>
+        where Key: Borrow<Q>,
+              Q: Ord
+    {
         self.remove_expired();
         let list = &mut self.list;
 
@@ -249,7 +262,10 @@ impl<Key, Value> LruCache<Key, Value>
     }
 
     /// Returns whether `key` exists in the cache or not.
-    pub fn contains_key(&self, key: &Key) -> bool {
+    pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+        where Key: Borrow<Q>,
+              Q: Ord
+    {
         self.map.contains_key(key) && !self.expired(key)
     }
 
@@ -308,7 +324,10 @@ impl<Key, Value> LruCache<Key, Value>
         self.time_to_live != Duration::new(std::u64::MAX, 999_999_999)
     }
 
-    fn expired(&self, key: &Key) -> bool {
+    fn expired<Q: ?Sized>(&self, key: &Q) -> bool
+        where Key: Borrow<Q>,
+              Q: Ord
+    {
         let now = Instant::now();
         self.has_expiry() && self.map.get(key).map_or(false, |v| v.1 + self.time_to_live < now)
     }
@@ -321,9 +340,23 @@ impl<Key, Value> LruCache<Key, Value>
         self.has_expiry() && self.list.front().map_or(false, |key| self.expired(key))
     }
 
-    fn update_key(list: &mut VecDeque<Key>, key: &Key) {
-        list.retain(|k| *k < *key || *k > *key);
-        list.push_back(key.clone());
+    // Move `key` in the ordered list to the last
+    fn update_key<Q: ?Sized>(list: &mut VecDeque<Key>, key: &Q)
+        where Key: Borrow<Q>,
+              Q: Ord
+    {
+        let mut pos = None;
+        for i in 0..list.len() {
+            if list[i].borrow() == key {
+                pos = Some(i);
+                break;
+            }
+        }
+
+        if let Some(pos) = pos {
+            let k = list.remove(pos).unwrap();
+            list.push_back(k);
+        }
     }
 
     fn remove_expired(&mut self) {
@@ -592,5 +625,16 @@ mod test {
         assert_eq!(Some(&0), lru_cache.peek(&0));
         thread::sleep(duration);
         assert_eq!(None, lru_cache.peek(&0));
+    }
+
+    #[test]
+    fn deref_coercions() {
+        let mut lru_cache = super::LruCache::<String, usize>::with_capacity(1);
+        let _ = lru_cache.insert("foo".to_string(), 0);
+        assert_eq!(true, lru_cache.contains_key("foo"));
+        assert_eq!(Some(&0), lru_cache.get("foo"));
+        assert_eq!(Some(&mut 0), lru_cache.get_mut("foo"));
+        assert_eq!(Some(&0), lru_cache.peek("foo"));
+        assert_eq!(Some(0), lru_cache.remove("foo"));
     }
 }
