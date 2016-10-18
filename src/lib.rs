@@ -345,15 +345,7 @@ impl<Key, Value> LruCache<Key, Value>
         where Key: Borrow<Q>,
               Q: Ord
     {
-        let mut pos = None;
-        for (i, k) in list.iter().enumerate() {
-            if k.borrow() == key {
-                pos = Some(i);
-                break;
-            }
-        }
-
-        if let Some(pos) = pos {
+        if let Some(pos) = list.iter().position(|k| k.borrow() == key) {
             let k = list.remove(pos).unwrap();
             list.push_back(k);
         }
