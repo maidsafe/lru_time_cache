@@ -18,8 +18,7 @@
 //! # Least Recently Used (LRU) Cache
 //!
 //! Implementation of a Least Recently Used
-//! [caching algorithm](http://en.wikipedia.org/wiki/Cache_algorithms) in a
-//! container which may be
+//! [caching algorithm](http://en.wikipedia.org/wiki/Cache_algorithms) in a container which may be
 //! limited by size or time, ordered by most recently seen.
 //!
 //! # Examples
@@ -28,7 +27,7 @@
 //! extern crate lru_time_cache;
 //! use ::lru_time_cache::LruCache;
 //!
-//! # fn main() {
+//! fn main() {
 //! // Construct an `LruCache` of `<u8, String>`s, limited by key count
 //! let max_count = 10;
 //! let _lru_cache = LruCache::<u8, String>::with_capacity(max_count);
@@ -41,10 +40,8 @@
 //! // Construct an `LruCache` of `<u64, Vec<u8>>`s, limited by key count and
 //! // expiry time
 //! let _lru_cache = LruCache::<u64,
-//! Vec<u8>>::with_expiry_duration_and_capacity(time_to_live,
-//!
-//! max_count);
-//! # }
+//! Vec<u8>>::with_expiry_duration_and_capacity(time_to_live, max_count);
+//! }
 //! ```
 
 #![doc(html_logo_url =
