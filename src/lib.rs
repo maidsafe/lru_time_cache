@@ -1,24 +1,33 @@
 // Copyright 2015 MaidSafe.net limited.
 //
-// This SAFE Network Software is licensed to you under (1) the MaidSafe.net Commercial License,
-// version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
+// This SAFE Network Software is licensed to you under (1) the MaidSafe.net
+// Commercial License,
+// version 1.0 or later, or (2) The General Public License (GPL), version 3,
+// depending on which
 // licence you accepted on initial access to the Software (the "Licences").
 //
-// By contributing code to the SAFE Network Software, or to this project generally, you agree to be
-// bound by the terms of the MaidSafe Contributor Agreement, version 1.0.  This, along with the
-// Licenses can be found in the root directory of this project at LICENSE, COPYING and CONTRIBUTOR.
+// By contributing code to the SAFE Network Software, or to this project
+// generally, you agree to be
+// bound by the terms of the MaidSafe Contributor Agreement, version 1.0.
+// This, along with the
+// Licenses can be found in the root directory of this project at LICENSE,
+// COPYING and CONTRIBUTOR.
 //
-// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
-// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// Unless required by applicable law or agreed to in writing, the SAFE Network
+// Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+// OR CONDITIONS OF ANY
 // KIND, either express or implied.
 //
-// Please review the Licences for the specific language governing permissions and limitations
+// Please review the Licences for the specific language governing permissions
+// and limitations
 // relating to use of the SAFE Network Software.
 
 //! # Least Recently Used (LRU) Cache
 //!
 //! Implementation of a Least Recently Used
-//! [caching algorithm](http://en.wikipedia.org/wiki/Cache_algorithms) in a container which may be
+//! [caching algorithm](http://en.wikipedia.org/wiki/Cache_algorithms) in a
+//! container which may be
 //! limited by size or time, ordered by most recently seen.
 //!
 //! # Examples
@@ -30,15 +39,19 @@
 //! # fn main() {
 //! // Construct an `LruCache` of `<u8, String>`s, limited by key count
 //! let max_count = 10;
-//! let lru_cache = LruCache::<u8, String>::with_capacity(max_count);
+//! let _lru_cache = LruCache::<u8, String>::with_capacity(max_count);
 //!
 //! // Construct an `LruCache` of `<String, i64>`s, limited by expiry time
 //! let time_to_live = ::std::time::Duration::from_millis(100);
-//! let lru_cache = LruCache::<String, i64>::with_expiry_duration(time_to_live);
+//! let _lru_cache = LruCache::<String,
+//! i64>::with_expiry_duration(time_to_live);
 //!
-//! // Construct an `LruCache` of `<u64, Vec<u8>>`s, limited by key count and expiry time
-//! let lru_cache = LruCache::<u64, Vec<u8>>::with_expiry_duration_and_capacity(time_to_live,
-//!                                                                             max_count);
+//! // Construct an `LruCache` of `<u64, Vec<u8>>`s, limited by key count and
+//! // expiry time
+//! let _lru_cache = LruCache::<u64,
+//! Vec<u8>>::with_expiry_duration_and_capacity(time_to_live,
+//!
+//! max_count);
 //! # }
 //! ```
 
@@ -48,7 +61,8 @@
        html_root_url = "http://maidsafe.github.io/lru_time_cache")]
 
 // For explanation of lint checks, run `rustc -W help` or see
-// https://github.com/maidsafe/QA/blob/master/Documentation/Rust%20Lint%20Checks.md
+// https://github.
+// com/maidsafe/QA/blob/master/Documentation/Rust%20Lint%20Checks.md
 #![forbid(bad_style, exceeding_bitshifts, mutable_transmutes, no_mangle_const_items,
           unknown_crate_types, warnings)]
 #![deny(deprecated, improper_ctypes, missing_docs,
@@ -72,9 +86,10 @@ extern crate rand;
 use std::borrow::Borrow;
 use std::collections::{BTreeMap, VecDeque};
 use std::collections::btree_map;
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
-/// A view into a single entry in an LRU cache, which may either be vacant or occupied.
+/// A view into a single entry in an LRU cache, which may either be vacant or
+/// occupied.
 pub enum Entry<'a, Key: 'a, Value: 'a> {
     /// A vacant Entry
     Vacant(VacantEntry<'a, Key, Value>),
@@ -93,7 +108,8 @@ pub struct OccupiedEntry<'a, Value: 'a> {
     value: &'a mut Value,
 }
 
-/// An iterator over an `LruCache`'s entries that updates the timestamps as values are traversed.
+/// An iterator over an `LruCache`'s entries that updates the timestamps as
+/// values are traversed.
 pub struct Iter<'a, Key: 'a, Value: 'a> {
     map_iter_mut: btree_map::IterMut<'a, Key, (Value, Instant)>,
     list: &'a mut VecDeque<Key>,
@@ -187,8 +203,10 @@ impl<Key, Value> LruCache<Key, Value>
 
     /// Inserts a key-value pair into the cache.
     ///
-    /// If the key already existed in the cache, the existing value is returned and overwritten in
-    /// the cache.  Otherwise, the key-value pair is inserted and `None` is returned.
+    /// If the key already existed in the cache, the existing value is returned
+    /// and overwritten in
+    /// the cache.  Otherwise, the key-value pair is inserted and `None` is
+    /// returned.
     pub fn insert(&mut self, key: Key, value: Value) -> Option<Value> {
         if self.map.contains_key(&key) {
             Self::update_key(&mut self.list, &key);
@@ -217,7 +235,8 @@ impl<Key, Value> LruCache<Key, Value>
         self.list.clear();
     }
 
-    /// Retrieves a reference to the value stored under `key`, or `None` if the key doesn't exist.
+    /// Retrieves a reference to the value stored under `key`, or `None` if the
+    /// key doesn't exist.
     /// Also removes expired elements and updates the time.
     pub fn get<Q: ?Sized>(&mut self, key: &Q) -> Option<&Value>
         where Key: Borrow<Q>,
@@ -233,7 +252,8 @@ impl<Key, Value> LruCache<Key, Value>
         })
     }
 
-    /// Returns a reference to the value with the given `key`, if present and not expired, without
+    /// Returns a reference to the value with the given `key`, if present and
+    /// not expired, without
     /// updating the timestamp.
     pub fn peek<Q: ?Sized>(&self, key: &Q) -> Option<&Value>
         where Key: Borrow<Q>,
@@ -245,7 +265,8 @@ impl<Key, Value> LruCache<Key, Value>
         self.map.get(key).map(|&(ref value, _)| value)
     }
 
-    /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
+    /// Retrieves a mutable reference to the value stored under `key`, or
+    /// `None` if the key doesn't
     /// exist.  Also removes expired elements and updates the time.
     pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut Value>
         where Key: Borrow<Q>,
@@ -269,7 +290,8 @@ impl<Key, Value> LruCache<Key, Value>
         self.map.contains_key(key) && !self.expired(key)
     }
 
-    /// Returns the size of the cache, i.e. the number of cached non-expired key-value pairs.
+    /// Returns the size of the cache, i.e. the number of cached non-expired
+    /// key-value pairs.
     pub fn len(&self) -> usize {
         self.map.len() - self.list.iter().take_while(|key| self.expired(key)).count()
     }
@@ -279,7 +301,8 @@ impl<Key, Value> LruCache<Key, Value>
         self.list.iter().all(|key| self.expired(key))
     }
 
-    /// Gets the given key's corresponding entry in the map for in-place manipulation.
+    /// Gets the given key's corresponding entry in the map for in-place
+    /// manipulation.
     pub fn entry(&mut self, key: Key) -> Entry<Key, Value> {
         // We need to do it the ugly way below due to this issue:
         // https://github.com/rust-lang/rfcs/issues/811
@@ -297,7 +320,8 @@ impl<Key, Value> LruCache<Key, Value>
         }
     }
 
-    /// Returns an iterator over all entries that updates the timestamps as values are
+    /// Returns an iterator over all entries that updates the timestamps as
+    /// values are
     /// traversed. Also removes expired elements before creating the iterator.
     pub fn iter(&mut self) -> Iter<Key, Value> {
         self.remove_expired();
@@ -312,7 +336,8 @@ impl<Key, Value> LruCache<Key, Value>
         }
     }
 
-    /// Returns an iterator over all entries that does not modify the timestamps.
+    /// Returns an iterator over all entries that does not modify the
+    /// timestamps.
     pub fn peek_iter(&self) -> PeekIter<Key, Value> {
         PeekIter {
             map_iter: self.map.iter(),
@@ -388,7 +413,8 @@ impl<'a, Value> OccupiedEntry<'a, Value> {
 }
 
 impl<'a, Key: Ord + Clone, Value> Entry<'a, Key, Value> {
-    /// Ensures a value is in the entry by inserting the default if empty, and returns
+    /// Ensures a value is in the entry by inserting the default if empty, and
+    /// returns
     /// a mutable reference to the value in the entry.
     pub fn or_insert(self, default: Value) -> &'a mut Value {
         match self {
@@ -397,7 +423,8 @@ impl<'a, Key: Ord + Clone, Value> Entry<'a, Key, Value> {
         }
     }
 
-    /// Ensures a value is in the entry by inserting the result of the default function if empty,
+    /// Ensures a value is in the entry by inserting the result of the default
+    /// function if empty,
     /// and returns a mutable reference to the value in the entry.
     pub fn or_insert_with<F: FnOnce() -> Value>(self, default: F) -> &'a mut Value {
         match self {
@@ -563,14 +590,15 @@ mod test {
         assert_eq!(vec![(&0, &0), (&1, &1), (&2, &2)],
                    lru_cache.iter().collect::<Vec<_>>());
 
-        let initial_instant0 = lru_cache.map.get(&0).unwrap().1;
-        let initial_instant2 = lru_cache.map.get(&2).unwrap().1;
+        let initial_instant0 = lru_cache.map[&0].1;
+        let initial_instant2 = lru_cache.map[&2].1;
 
-        // only the first two entries should have their timestamp updated (and position in list)
+        // only the first two entries should have their timestamp updated (and position
+        // in list)
         let _ = lru_cache.iter().take(2).all(|_| true);
 
-        assert!(lru_cache.map.get(&0).unwrap().1 != initial_instant0);
-        assert_eq!(lru_cache.map.get(&2).unwrap().1, initial_instant2);
+        assert!(lru_cache.map[&0].1 != initial_instant0);
+        assert_eq!(lru_cache.map[&2].1, initial_instant2);
 
         assert_eq!(*lru_cache.list.front().unwrap(), 2);
         assert_eq!(*lru_cache.list.back().unwrap(), 1);
