@@ -25,20 +25,20 @@
 //!
 //! ```
 //! extern crate lru_time_cache;
-//! use ::lru_time_cache::LruCache;
+//! use lru_time_cache::LruCache;
 //!
 //! # fn main() {
 //! // Construct an `LruCache` of `<u8, String>`s, limited by key count
 //! let max_count = 10;
-//! let lru_cache = LruCache::<u8, String>::with_capacity(max_count);
+//! let _lru_cache = LruCache::<u8, String>::with_capacity(max_count);
 //!
 //! // Construct an `LruCache` of `<String, i64>`s, limited by expiry time
 //! let time_to_live = ::std::time::Duration::from_millis(100);
-//! let lru_cache = LruCache::<String, i64>::with_expiry_duration(time_to_live);
+//! let _lru_cache = LruCache::<String, i64>::with_expiry_duration(time_to_live);
 //!
 //! // Construct an `LruCache` of `<u64, Vec<u8>>`s, limited by key count and expiry time
-//! let lru_cache = LruCache::<u64, Vec<u8>>::with_expiry_duration_and_capacity(time_to_live,
-//!                                                                             max_count);
+//! let _lru_cache = LruCache::<u64, Vec<u8>>::with_expiry_duration_and_capacity(time_to_live,
+//!                                                                              max_count);
 //! # }
 //! ```
 
@@ -70,9 +70,8 @@
 extern crate rand;
 
 use std::borrow::Borrow;
-use std::collections::{BTreeMap, VecDeque};
-use std::collections::btree_map;
-use std::time::{Instant, Duration};
+use std::collections::{BTreeMap, VecDeque, btree_map};
+use std::time::{Duration, Instant};
 
 /// A view into a single entry in an LRU cache, which may either be vacant or occupied.
 pub enum Entry<'a, Key: 'a, Value: 'a> {
@@ -563,14 +562,14 @@ mod test {
         assert_eq!(vec![(&0, &0), (&1, &1), (&2, &2)],
                    lru_cache.iter().collect::<Vec<_>>());
 
-        let initial_instant0 = lru_cache.map.get(&0).unwrap().1;
-        let initial_instant2 = lru_cache.map.get(&2).unwrap().1;
+        let initial_instant0 = lru_cache.map[&0].1;
+        let initial_instant2 = lru_cache.map[&2].1;
 
         // only the first two entries should have their timestamp updated (and position in list)
         let _ = lru_cache.iter().take(2).all(|_| true);
 
-        assert!(lru_cache.map.get(&0).unwrap().1 != initial_instant0);
-        assert_eq!(lru_cache.map.get(&2).unwrap().1, initial_instant2);
+        assert!(lru_cache.map[&0].1 != initial_instant0);
+        assert_eq!(lru_cache.map[&2].1, initial_instant2);
 
         assert_eq!(*lru_cache.list.front().unwrap(), 2);
         assert_eq!(*lru_cache.list.back().unwrap(), 1);
