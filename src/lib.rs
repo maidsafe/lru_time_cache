@@ -412,11 +412,11 @@ mod test {
     use std::time::Duration;
 
     fn generate_random_vec<T>(len: usize) -> Vec<T>
-        where T: ::rand::Rand
+        where T: rand::Rand
     {
         let mut vec = Vec::<T>::with_capacity(len);
         for _ in 0..len {
-            vec.push(::rand::random::<T>());
+            vec.push(rand::random());
         }
         vec
     }
