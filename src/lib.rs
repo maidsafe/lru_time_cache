@@ -72,6 +72,7 @@ extern crate rand;
 use std::borrow::Borrow;
 use std::collections::{BTreeMap, VecDeque, btree_map};
 use std::time::{Duration, Instant};
+use std::usize;
 
 /// A view into a single entry in an LRU cache, which may either be vacant or occupied.
 pub enum Entry<'a, Key: 'a, Value: 'a> {
@@ -167,7 +168,7 @@ impl<Key, Value> LruCache<Key, Value>
         LruCache {
             map: BTreeMap::new(),
             list: VecDeque::new(),
-            capacity: ::std::usize::MAX,
+            capacity: usize::MAX,
             time_to_live: time_to_live,
         }
     }
@@ -408,15 +409,16 @@ impl<'a, Key: Ord + Clone, Value> Entry<'a, Key, Value> {
 
 #[cfg(test)]
 mod test {
+    use rand;
     use std::thread;
     use std::time::Duration;
 
     fn generate_random_vec<T>(len: usize) -> Vec<T>
-        where T: ::rand::Rand
+        where T: rand::Rand
     {
         let mut vec = Vec::<T>::with_capacity(len);
         for _ in 0..len {
-            vec.push(::rand::random::<T>());
+            vec.push(rand::random());
         }
         vec
     }
@@ -456,7 +458,7 @@ mod test {
         }
 
         let duration = Duration::from_millis(100);
-        ::std::thread::sleep(duration);
+        thread::sleep(duration);
         let _ = lru_cache.insert(11, 11);
 
         assert_eq!(lru_cache.len(), 1);
@@ -468,7 +470,7 @@ mod test {
             assert_eq!(lru_cache.len(), i + 2);
         }
 
-        ::std::thread::sleep(duration);
+        thread::sleep(duration);
         assert_eq!(0, lru_cache.len());
         assert!(lru_cache.is_empty());
     }
@@ -483,7 +485,7 @@ mod test {
         assert_eq!(lru_cache.len(), 1);
 
         let duration = Duration::from_millis(100);
-        ::std::thread::sleep(duration);
+        thread::sleep(duration);
 
         assert!(!lru_cache.contains_key(&0));
         assert_eq!(lru_cache.len(), 0);
@@ -511,7 +513,7 @@ mod test {
         }
 
         let duration = Duration::from_millis(100);
-        ::std::thread::sleep(duration);
+        thread::sleep(duration);
         let _ = lru_cache.insert(1, 1);
 
         assert_eq!(lru_cache.len(), 1);
@@ -545,7 +547,7 @@ mod test {
         }
 
         let duration = Duration::from_millis(100);
-        ::std::thread::sleep(duration);
+        thread::sleep(duration);
         let _ = lru_cache.insert(Temp { id: generate_random_vec::<u8>(64) }, 1);
 
         assert_eq!(lru_cache.len(), 1);
