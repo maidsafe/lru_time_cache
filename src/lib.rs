@@ -61,11 +61,6 @@
 #![allow(box_pointers, fat_ptr_transmutes, missing_copy_implementations,
          missing_debug_implementations, variant_size_differences)]
 
-#![cfg_attr(feature="clippy", feature(plugin))]
-#![cfg_attr(feature="clippy", plugin(clippy))]
-#![cfg_attr(feature="clippy", deny(clippy))]
-#![cfg_attr(feature="clippy", allow(use_debug))]
-
 #[cfg(test)]
 extern crate rand;
 
@@ -106,7 +101,7 @@ impl<'a, Key, Value> Iterator for Iter<'a, Key, Value>
 {
     type Item = (&'a Key, &'a Value);
 
-    #[cfg_attr(feature="clippy", allow(while_let_on_iterator))]
+    #[cfg_attr(feature="cargo-clippy", allow(while_let_on_iterator))]
     fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
         let now = Instant::now();
         while let Some((key, &mut (ref value, ref mut instant))) = self.map_iter_mut.next() {
@@ -131,7 +126,7 @@ impl<'a, Key, Value> Iterator for PeekIter<'a, Key, Value>
 {
     type Item = (&'a Key, &'a Value);
 
-    #[cfg_attr(feature="clippy", allow(while_let_on_iterator))]
+    #[cfg_attr(feature="cargo-clippy", allow(while_let_on_iterator))]
     fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
         while let Some((key, &(ref value, _))) = self.map_iter.next() {
             if !self.lru_cache.expired(key) {
