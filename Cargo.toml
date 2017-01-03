@@ -1,7 +1,7 @@
 [package]
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Implementation of a Least Recently Used caching algorithm in a container which may be limited by size or time, ordered by most recently seen."
-documentation = "http://docs.maidsafe.net/lru_time_cache/latest"
+documentation = "https://docs.rs/lru_time_cache/"
 homepage = "http://maidsafe.net"
 license = "GPL-3.0"
 name = "lru_time_cache"
@@ -9,8 +9,5 @@ readme = "README.md"
 repository = "https://github.com/maidsafe/lru_time_cache"
 version = "0.5.0"
 
-[dependencies]
-clippy = {version = "=0.0.99", optional = true}
-# This should be a dev dependency, but run_clippy.sh uses `cargo rustc`, which
-# doesn't include dev dependencies.
-rand = "~0.3.14"
+[dev-dependencies]
+rand = "~0.3.15"
