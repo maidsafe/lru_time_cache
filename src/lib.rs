@@ -5,8 +5,8 @@
 // licence you accepted on initial access to the Software (the "Licences").
 //
 // By contributing code to the SAFE Network Software, or to this project generally, you agree to be
-// bound by the terms of the MaidSafe Contributor Agreement, version 1.0.  This, along with the
-// Licenses can be found in the root directory of this project at LICENSE, COPYING and CONTRIBUTOR.
+// bound by the terms of the MaidSafe Contributor Agreement.  This, along with the Licenses can be
+// found in the root directory of this project at LICENSE, COPYING and CONTRIBUTOR.
 //
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -44,8 +44,8 @@
 
 #![doc(html_logo_url =
            "https://raw.githubusercontent.com/maidsafe/QA/master/Images/maidsafe_logo.png",
-       html_favicon_url = "http://maidsafe.net/img/favicon.ico",
-       html_root_url = "http://maidsafe.github.io/lru_time_cache")]
+       html_favicon_url = "https://maidsafe.net/img/favicon.ico",
+       html_root_url = "https://docs.rs/lru_time_cache")]
 
 // For explanation of lint checks, run `rustc -W help` or see
 // https://github.com/maidsafe/QA/blob/master/Documentation/Rust%20Lint%20Checks.md
@@ -222,10 +222,10 @@ impl<Key, Value> LruCache<Key, Value>
         let list = &mut self.list;
 
         self.map.get_mut(key).map(|result| {
-            Self::update_key(list, key);
-            result.1 = Instant::now();
-            &result.0
-        })
+                                      Self::update_key(list, key);
+                                      result.1 = Instant::now();
+                                      &result.0
+                                  })
     }
 
     /// Returns a reference to the value with the given `key`, if present and not expired, without
@@ -250,10 +250,10 @@ impl<Key, Value> LruCache<Key, Value>
         let list = &mut self.list;
 
         self.map.get_mut(key).map(|result| {
-            Self::update_key(list, key);
-            result.1 = Instant::now();
-            &mut result.0
-        })
+                                      Self::update_key(list, key);
+                                      result.1 = Instant::now();
+                                      &mut result.0
+                                  })
     }
 
     /// Returns whether `key` exists in the cache or not.
@@ -266,7 +266,11 @@ impl<Key, Value> LruCache<Key, Value>
 
     /// Returns the size of the cache, i.e. the number of cached non-expired key-value pairs.
     pub fn len(&self) -> usize {
-        self.map.len() - self.list.iter().take_while(|key| self.expired(key)).count()
+        self.map.len() -
+        self.list
+            .iter()
+            .take_while(|key| self.expired(key))
+            .count()
     }
 
     /// Returns `true` if there are no non-expired entries in the cache.
@@ -286,9 +290,9 @@ impl<Key, Value> LruCache<Key, Value>
             Entry::Occupied(OccupiedEntry { value: self.get_mut(&key).expect("key not found") })
         } else {
             Entry::Vacant(VacantEntry {
-                key: key,
-                cache: self,
-            })
+                              key: key,
+                              cache: self,
+                          })
         }
     }
 
