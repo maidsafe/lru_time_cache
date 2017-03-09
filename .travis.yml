@@ -31,11 +31,13 @@ script:
       (
         set -x;
         cargo fmt -- --write-mode=diff &&
-        cargo build &&
-        cargo test  --verbose
+        cargo test --release --verbose
       );
     elif [ "${TRAVIS_OS_NAME}" = linux ]; then
-      cargo clippy -- -D clippy;
+      (
+        set -x;
+        cargo clippy && cargo clippy --profile test
+      );
     fi
 before_cache:
  - cargo prune

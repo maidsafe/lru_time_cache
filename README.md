@@ -2,12 +2,12 @@
 
 **Maintainer:** Andreas Fackler (andreas.fackler@maidsafe.net)
 
-|Crate|Docs|Linux/OS X|Windows|Issues|
-|:---:|:--:|:--------:|:-----:|:----:|
-|[![](http://meritbadge.herokuapp.com/lru_time_cache)](https://crates.io/crates/lru_time_cache)|[![Documentation](https://docs.rs/lru_time_cache/badge.svg)](https://docs.rs/lru_time_cache)|[![Build Status](https://travis-ci.org/maidsafe/lru_time_cache.svg?branch=master)](https://travis-ci.org/maidsafe/lru_time_cache)|[![Build status](https://ci.appveyor.com/api/projects/status/15km1vxtg83qgvb5/branch/master?svg=true)](https://ci.appveyor.com/project/MaidSafe-QA/lru-time-cache/branch/master)|[![Stories in Ready](https://badge.waffle.io/maidsafe/lru_time_cache.png?label=ready&title=Ready)](https://waffle.io/maidsafe/lru_time_cache)|
+|Crate|Documentation|Linux/OS X|Windows|Issues|
+|:---:|:-----------:|:--------:|:-----:|:----:|
+|[![](http://meritbadge.herokuapp.com/lru_time_cache)](https://crates.io/crates/lru_time_cache)|[![Documentation](https://docs.rs/lru_time_cache/badge.svg)](https://docs.rs/lru_time_cache)|[![Build Status](https://travis-ci.org/maidsafe/lru_time_cache.svg?branch=master)](https://travis-ci.org/maidsafe/lru_time_cache)|[![Build status](https://ci.appveyor.com/api/projects/status/15km1vxtg83qgvb5/branch/master?svg=true)](https://ci.appveyor.com/project/MaidSafe-QA/lru_time_cache/branch/master)|[![Stories in Ready](https://badge.waffle.io/maidsafe/lru_time_cache.png?label=ready&title=Ready)](https://waffle.io/maidsafe/lru_time_cache)|
 
 | [MaidSafe website](https://maidsafe.net) | [SAFE Dev Forum](https://forum.safedev.org) | [SAFE Network Forum](https://safenetforum.org) |
-|:------:|:-------:|:-------:|:-------:|
+|:----------------------------------------:|:-------------------------------------------:|:----------------------------------------------:|
 
 ## Overview
 
@@ -25,6 +25,5 @@ at your option.
 ## Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the
-work by you, as defined in the MaidSafe Contributor Agreement, version 1.1 ([CONTRIBUTOR]
-(CONTRIBUTOR)), shall be dual licensed as above, and you agree to be bound by the terms of the
-MaidSafe Contributor Agreement, version 1.1.
+work by you, as defined in the MaidSafe Contributor Agreement ([CONTRIBUTOR](CONTRIBUTOR)), shall be
+dual licensed as above, and you agree to be bound by the terms of the MaidSafe Contributor Agreement.
