@@ -569,7 +569,7 @@ mod test {
         // only the first two entries should have their timestamp updated (and position in list)
         let _ = lru_cache.iter().take(2).all(|_| true);
 
-        assert!(lru_cache.map[&0].1 != initial_instant0);
+        assert_ne!(lru_cache.map[&0].1, initial_instant0);
         assert_eq!(lru_cache.map[&2].1, initial_instant2);
 
         assert_eq!(*lru_cache.list.front().unwrap(), 2);
