@@ -63,10 +63,16 @@
 
 #[cfg(test)]
 extern crate rand;
+#[cfg(feature="fake_clock")]
+extern crate fake_clock;
 
+#[cfg(feature="fake_clock")]
+use fake_clock::FakeClock as Instant;
 use std::borrow::Borrow;
 use std::collections::{BTreeMap, VecDeque, btree_map};
-use std::time::{Duration, Instant};
+use std::time::Duration;
+#[cfg(not(feature="fake_clock"))]
+use std::time::Instant;
 use std::usize;
 
 /// A view into a single entry in an LRU cache, which may either be vacant or occupied.
@@ -194,7 +200,9 @@ impl<Key, Value> LruCache<Key, Value>
             self.list.push_back(key.clone());
         }
 
-        self.map.insert(key, (value, Instant::now())).map(|pair| pair.0)
+        self.map
+            .insert(key, (value, Instant::now()))
+            .map(|pair| pair.0)
     }
 
     /// Removes a key-value pair from the cache.
@@ -202,7 +210,8 @@ impl<Key, Value> LruCache<Key, Value>
         where Key: Borrow<Q>,
               Q: Ord
     {
-        self.list.retain(|k| *k.borrow() < *key || *k.borrow() > *key);
+        self.list
+            .retain(|k| *k.borrow() < *key || *k.borrow() > *key);
         self.map.remove(key).map(|(value, _)| value)
     }
 
@@ -221,11 +230,13 @@ impl<Key, Value> LruCache<Key, Value>
         self.remove_expired();
         let list = &mut self.list;
 
-        self.map.get_mut(key).map(|result| {
-                                      Self::update_key(list, key);
-                                      result.1 = Instant::now();
-                                      &result.0
-                                  })
+        self.map
+            .get_mut(key)
+            .map(|result| {
+                     Self::update_key(list, key);
+                     result.1 = Instant::now();
+                     &result.0
+                 })
     }
 
     /// Returns a reference to the value with the given `key`, if present and not expired, without
@@ -249,11 +260,13 @@ impl<Key, Value> LruCache<Key, Value>
         self.remove_expired();
         let list = &mut self.list;
 
-        self.map.get_mut(key).map(|result| {
-                                      Self::update_key(list, key);
-                                      result.1 = Instant::now();
-                                      &mut result.0
-                                  })
+        self.map
+            .get_mut(key)
+            .map(|result| {
+                     Self::update_key(list, key);
+                     result.1 = Instant::now();
+                     &mut result.0
+                 })
     }
 
     /// Returns whether `key` exists in the cache or not.
@@ -328,11 +341,16 @@ impl<Key, Value> LruCache<Key, Value>
               Q: Ord
     {
         let now = Instant::now();
-        self.has_expiry() && self.map.get(key).map_or(false, |v| v.1 + self.time_to_live < now)
+        self.has_expiry() &&
+        self.map
+            .get(key)
+            .map_or(false, |v| v.1 + self.time_to_live < now)
     }
 
     fn remove_oldest_element(&mut self) {
-        let _ = self.list.pop_front().map(|key| assert!(self.map.remove(&key).is_some()));
+        let _ = self.list
+            .pop_front()
+            .map(|key| assert!(self.map.remove(&key).is_some()));
     }
 
     fn check_time_expired(&self) -> bool {
