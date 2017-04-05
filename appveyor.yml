@@ -33,3 +33,4 @@ build_script:
 
 test_script:
   - cargo test --verbose --release
+  - cargo test --features fake_clock --verbose --release
