@@ -10,7 +10,7 @@ repository = "https://github.com/maidsafe/lru_time_cache"
 version = "0.5.0"
 
 [dependencies]
-fake_clock = { version = "~0.0.1", optional = true }
+fake_clock = { version = "~0.1", optional = true }
 
 [dev-dependencies]
 rand = "~0.3.15"
