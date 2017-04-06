@@ -430,16 +430,15 @@ mod test {
     use std::time::Duration;
 
     #[cfg(feature = "fake_clock")]
-    fn sleep(time: Duration) {
+    fn sleep(time: u64) {
         use fake_clock::FakeClock;
-        // adding one millisecond to simulate waiting a tiny bit longer than requested
-        FakeClock::advance_time(time.as_secs() * 1000 + time.subsec_nanos() as u64 / 1000000 + 1);
+        FakeClock::advance_time(time);
     }
 
     #[cfg(not(feature = "fake_clock"))]
-    fn sleep(time: Duration) {
+    fn sleep(time: u64) {
         use std::thread;
-        thread::sleep(time);
+        thread::sleep(Duration::from_millis(time));
     }
 
     fn generate_random_vec<T>(len: usize) -> Vec<T>
@@ -486,8 +485,7 @@ mod test {
             assert_eq!(lru_cache.len(), i + 1);
         }
 
-        let duration = Duration::from_millis(100);
-        sleep(duration);
+        sleep(101);
         let _ = lru_cache.insert(11, 11);
 
         assert_eq!(lru_cache.len(), 1);
@@ -499,7 +497,7 @@ mod test {
             assert_eq!(lru_cache.len(), i + 2);
         }
 
-        sleep(duration);
+        sleep(101);
         assert_eq!(0, lru_cache.len());
         assert!(lru_cache.is_empty());
     }
@@ -513,8 +511,7 @@ mod test {
         let _ = lru_cache.insert(0, 0);
         assert_eq!(lru_cache.len(), 1);
 
-        let duration = Duration::from_millis(100);
-        sleep(duration);
+        sleep(101);
 
         assert!(!lru_cache.contains_key(&0));
         assert_eq!(lru_cache.len(), 0);
@@ -541,8 +538,7 @@ mod test {
             }
         }
 
-        let duration = Duration::from_millis(100);
-        sleep(duration);
+        sleep(101);
         let _ = lru_cache.insert(1, 1);
 
         assert_eq!(lru_cache.len(), 1);
@@ -575,8 +571,7 @@ mod test {
             }
         }
 
-        let duration = Duration::from_millis(100);
-        sleep(duration);
+        sleep(101);
         let _ = lru_cache.insert(Temp { id: generate_random_vec::<u8>(64) }, 1);
 
         assert_eq!(lru_cache.len(), 1);
@@ -585,21 +580,20 @@ mod test {
     #[test]
     fn iter() {
         let mut lru_cache = super::LruCache::<usize, usize>::with_capacity(3);
-        let milli = Duration::from_millis(1);
 
         let _ = lru_cache.insert(0, 0);
-        sleep(milli);
+        sleep(1);
         let _ = lru_cache.insert(1, 1);
-        sleep(milli);
+        sleep(1);
         let _ = lru_cache.insert(2, 2);
-        sleep(milli);
+        sleep(1);
 
         assert_eq!(vec![(&0, &0), (&1, &1), (&2, &2)],
                    lru_cache.iter().collect::<Vec<_>>());
 
         let initial_instant0 = lru_cache.map[&0].1;
         let initial_instant2 = lru_cache.map[&2].1;
-        sleep(milli);
+        sleep(1);
 
         // only the first two entries should have their timestamp updated (and position in list)
         let _ = lru_cache.iter().take(2).all(|_| true);
@@ -614,25 +608,24 @@ mod test {
     #[test]
     fn peek_iter() {
         let time_to_live = Duration::from_millis(50);
-        let duration = Duration::from_millis(30);
         let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
         let _ = lru_cache.insert(0, 0);
         let _ = lru_cache.insert(2, 2);
         let _ = lru_cache.insert(3, 3);
 
-        sleep(duration);
+        sleep(30);
         assert_eq!(vec![(&0, &0), (&2, &2), (&3, &3)],
                    lru_cache.peek_iter().collect::<Vec<_>>());
         assert_eq!(Some(&2), lru_cache.get(&2));
         let _ = lru_cache.insert(1, 1);
         let _ = lru_cache.insert(4, 4);
 
-        sleep(duration);
+        sleep(30);
         assert_eq!(vec![(&1, &1), (&2, &2), (&4, &4)],
                    lru_cache.peek_iter().collect::<Vec<_>>());
 
-        sleep(duration);
+        sleep(30);
         assert!(lru_cache.is_empty());
     }
 
@@ -645,12 +638,11 @@ mod test {
         let _ = lru_cache.insert(0, 0);
         assert_eq!(lru_cache.len(), 1);
 
-        let duration = Duration::from_millis(30);
-        sleep(duration);
+        sleep(30);
         assert_eq!(Some(&0), lru_cache.get(&0));
-        sleep(duration);
+        sleep(30);
         assert_eq!(Some(&0), lru_cache.peek(&0));
-        sleep(duration);
+        sleep(30);
         assert_eq!(None, lru_cache.peek(&0));
     }
 
