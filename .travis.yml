@@ -31,7 +31,8 @@ script:
       (
         set -x;
         cargo fmt -- --write-mode=diff &&
-        cargo test --release --verbose
+        cargo test --release --verbose &&
+        cargo test --features fake_clock --release --verbose
       );
     elif [ "${TRAVIS_OS_NAME}" = linux ]; then
       (

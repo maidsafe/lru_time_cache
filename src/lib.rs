@@ -63,10 +63,16 @@
 
 #[cfg(test)]
 extern crate rand;
+#[cfg(feature="fake_clock")]
+extern crate fake_clock;
 
+#[cfg(feature="fake_clock")]
+use fake_clock::FakeClock as Instant;
 use std::borrow::Borrow;
 use std::collections::{BTreeMap, VecDeque, btree_map};
-use std::time::{Duration, Instant};
+use std::time::Duration;
+#[cfg(not(feature="fake_clock"))]
+use std::time::Instant;
 use std::usize;
 
 /// A view into a single entry in an LRU cache, which may either be vacant or occupied.
@@ -194,7 +200,9 @@ impl<Key, Value> LruCache<Key, Value>
             self.list.push_back(key.clone());
         }
 
-        self.map.insert(key, (value, Instant::now())).map(|pair| pair.0)
+        self.map
+            .insert(key, (value, Instant::now()))
+            .map(|pair| pair.0)
     }
 
     /// Removes a key-value pair from the cache.
@@ -202,7 +210,8 @@ impl<Key, Value> LruCache<Key, Value>
         where Key: Borrow<Q>,
               Q: Ord
     {
-        self.list.retain(|k| *k.borrow() < *key || *k.borrow() > *key);
+        self.list
+            .retain(|k| *k.borrow() < *key || *k.borrow() > *key);
         self.map.remove(key).map(|(value, _)| value)
     }
 
@@ -221,11 +230,13 @@ impl<Key, Value> LruCache<Key, Value>
         self.remove_expired();
         let list = &mut self.list;
 
-        self.map.get_mut(key).map(|result| {
-                                      Self::update_key(list, key);
-                                      result.1 = Instant::now();
-                                      &result.0
-                                  })
+        self.map
+            .get_mut(key)
+            .map(|result| {
+                     Self::update_key(list, key);
+                     result.1 = Instant::now();
+                     &result.0
+                 })
     }
 
     /// Returns a reference to the value with the given `key`, if present and not expired, without
@@ -249,11 +260,13 @@ impl<Key, Value> LruCache<Key, Value>
         self.remove_expired();
         let list = &mut self.list;
 
-        self.map.get_mut(key).map(|result| {
-                                      Self::update_key(list, key);
-                                      result.1 = Instant::now();
-                                      &mut result.0
-                                  })
+        self.map
+            .get_mut(key)
+            .map(|result| {
+                     Self::update_key(list, key);
+                     result.1 = Instant::now();
+                     &mut result.0
+                 })
     }
 
     /// Returns whether `key` exists in the cache or not.
@@ -328,11 +341,16 @@ impl<Key, Value> LruCache<Key, Value>
               Q: Ord
     {
         let now = Instant::now();
-        self.has_expiry() && self.map.get(key).map_or(false, |v| v.1 + self.time_to_live < now)
+        self.has_expiry() &&
+        self.map
+            .get(key)
+            .map_or(false, |v| v.1 + self.time_to_live < now)
     }
 
     fn remove_oldest_element(&mut self) {
-        let _ = self.list.pop_front().map(|key| assert!(self.map.remove(&key).is_some()));
+        let _ = self.list
+            .pop_front()
+            .map(|key| assert!(self.map.remove(&key).is_some()));
     }
 
     fn check_time_expired(&self) -> bool {
@@ -409,8 +427,19 @@ impl<'a, Key: Ord + Clone, Value> Entry<'a, Key, Value> {
 #[cfg(test)]
 mod test {
     use rand;
-    use std::thread;
     use std::time::Duration;
+
+    #[cfg(feature = "fake_clock")]
+    fn sleep(time: u64) {
+        use fake_clock::FakeClock;
+        FakeClock::advance_time(time);
+    }
+
+    #[cfg(not(feature = "fake_clock"))]
+    fn sleep(time: u64) {
+        use std::thread;
+        thread::sleep(Duration::from_millis(time));
+    }
 
     fn generate_random_vec<T>(len: usize) -> Vec<T>
         where T: rand::Rand
@@ -456,8 +485,7 @@ mod test {
             assert_eq!(lru_cache.len(), i + 1);
         }
 
-        let duration = Duration::from_millis(100);
-        thread::sleep(duration);
+        sleep(101);
         let _ = lru_cache.insert(11, 11);
 
         assert_eq!(lru_cache.len(), 1);
@@ -469,7 +497,7 @@ mod test {
             assert_eq!(lru_cache.len(), i + 2);
         }
 
-        thread::sleep(duration);
+        sleep(101);
         assert_eq!(0, lru_cache.len());
         assert!(lru_cache.is_empty());
     }
@@ -483,8 +511,7 @@ mod test {
         let _ = lru_cache.insert(0, 0);
         assert_eq!(lru_cache.len(), 1);
 
-        let duration = Duration::from_millis(100);
-        thread::sleep(duration);
+        sleep(101);
 
         assert!(!lru_cache.contains_key(&0));
         assert_eq!(lru_cache.len(), 0);
@@ -511,8 +538,7 @@ mod test {
             }
         }
 
-        let duration = Duration::from_millis(100);
-        thread::sleep(duration);
+        sleep(101);
         let _ = lru_cache.insert(1, 1);
 
         assert_eq!(lru_cache.len(), 1);
@@ -545,8 +571,7 @@ mod test {
             }
         }
 
-        let duration = Duration::from_millis(100);
-        thread::sleep(duration);
+        sleep(101);
         let _ = lru_cache.insert(Temp { id: generate_random_vec::<u8>(64) }, 1);
 
         assert_eq!(lru_cache.len(), 1);
@@ -557,14 +582,18 @@ mod test {
         let mut lru_cache = super::LruCache::<usize, usize>::with_capacity(3);
 
         let _ = lru_cache.insert(0, 0);
+        sleep(1);
         let _ = lru_cache.insert(1, 1);
+        sleep(1);
         let _ = lru_cache.insert(2, 2);
+        sleep(1);
 
         assert_eq!(vec![(&0, &0), (&1, &1), (&2, &2)],
                    lru_cache.iter().collect::<Vec<_>>());
 
         let initial_instant0 = lru_cache.map[&0].1;
         let initial_instant2 = lru_cache.map[&2].1;
+        sleep(1);
 
         // only the first two entries should have their timestamp updated (and position in list)
         let _ = lru_cache.iter().take(2).all(|_| true);
@@ -579,25 +608,24 @@ mod test {
     #[test]
     fn peek_iter() {
         let time_to_live = Duration::from_millis(50);
-        let duration = Duration::from_millis(30);
         let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
         let _ = lru_cache.insert(0, 0);
         let _ = lru_cache.insert(2, 2);
         let _ = lru_cache.insert(3, 3);
 
-        thread::sleep(duration);
+        sleep(30);
         assert_eq!(vec![(&0, &0), (&2, &2), (&3, &3)],
                    lru_cache.peek_iter().collect::<Vec<_>>());
         assert_eq!(Some(&2), lru_cache.get(&2));
         let _ = lru_cache.insert(1, 1);
         let _ = lru_cache.insert(4, 4);
 
-        thread::sleep(duration);
+        sleep(30);
         assert_eq!(vec![(&1, &1), (&2, &2), (&4, &4)],
                    lru_cache.peek_iter().collect::<Vec<_>>());
 
-        thread::sleep(duration);
+        sleep(30);
         assert!(lru_cache.is_empty());
     }
 
@@ -610,12 +638,11 @@ mod test {
         let _ = lru_cache.insert(0, 0);
         assert_eq!(lru_cache.len(), 1);
 
-        let duration = Duration::from_millis(30);
-        thread::sleep(duration);
+        sleep(30);
         assert_eq!(Some(&0), lru_cache.get(&0));
-        thread::sleep(duration);
+        sleep(30);
         assert_eq!(Some(&0), lru_cache.peek(&0));
-        thread::sleep(duration);
+        sleep(30);
         assert_eq!(None, lru_cache.peek(&0));
     }
 
