@@ -1,5 +1,9 @@
 # Lru Time Cache - Change Log
 
+## [0.6.0]
+- Add support for using fake clock.
+- CI, README, rustfmt and clippy cleanups.
+
 ## [0.5.0]
 - Add `iter` and remove obsolete `retrieve_all` methods.
 
