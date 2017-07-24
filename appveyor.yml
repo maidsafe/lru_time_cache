@@ -29,7 +29,7 @@ configuration:
   - Release
 
 build_script:
-  - cargo rustc --verbose --release --profile test --lib -- -Zno-trans
+  - cargo check --verbose --release --lib --tests
 
 test_script:
   - cargo test --verbose --release
