@@ -63,15 +63,15 @@
 
 #[cfg(test)]
 extern crate rand;
-#[cfg(feature="fake_clock")]
+#[cfg(feature = "fake_clock")]
 extern crate fake_clock;
 
-#[cfg(feature="fake_clock")]
+#[cfg(feature = "fake_clock")]
 use fake_clock::FakeClock as Instant;
 use std::borrow::Borrow;
 use std::collections::{BTreeMap, VecDeque, btree_map};
 use std::time::Duration;
-#[cfg(not(feature="fake_clock"))]
+#[cfg(not(feature = "fake_clock"))]
 use std::time::Instant;
 use std::usize;
 
@@ -103,11 +103,12 @@ pub struct Iter<'a, Key: 'a, Value: 'a> {
 }
 
 impl<'a, Key, Value> Iterator for Iter<'a, Key, Value>
-    where Key: Ord + Clone
+where
+    Key: Ord + Clone,
 {
     type Item = (&'a Key, &'a Value);
 
-    #[cfg_attr(feature="cargo-clippy", allow(while_let_on_iterator))]
+    #[cfg_attr(feature = "cargo-clippy", allow(while_let_on_iterator))]
     fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
         let now = Instant::now();
         while let Some((key, &mut (ref value, ref mut instant))) = self.map_iter_mut.next() {
@@ -128,11 +129,12 @@ pub struct PeekIter<'a, Key: 'a, Value: 'a> {
 }
 
 impl<'a, Key, Value> Iterator for PeekIter<'a, Key, Value>
-    where Key: Ord + Clone
+where
+    Key: Ord + Clone,
 {
     type Item = (&'a Key, &'a Value);
 
-    #[cfg_attr(feature="cargo-clippy", allow(while_let_on_iterator))]
+    #[cfg_attr(feature = "cargo-clippy", allow(while_let_on_iterator))]
     fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
         while let Some((key, &(ref value, _))) = self.map_iter.next() {
             if !self.lru_cache.expired(key) {
@@ -152,7 +154,8 @@ pub struct LruCache<Key, Value> {
 }
 
 impl<Key, Value> LruCache<Key, Value>
-    where Key: Ord + Clone
+where
+    Key: Ord + Clone,
 {
     /// Constructor for capacity based `LruCache`.
     pub fn with_capacity(capacity: usize) -> LruCache<Key, Value> {
@@ -175,9 +178,10 @@ impl<Key, Value> LruCache<Key, Value>
     }
 
     /// Constructor for dual-feature capacity and time based `LruCache`.
-    pub fn with_expiry_duration_and_capacity(time_to_live: Duration,
-                                             capacity: usize)
-                                             -> LruCache<Key, Value> {
+    pub fn with_expiry_duration_and_capacity(
+        time_to_live: Duration,
+        capacity: usize,
+    ) -> LruCache<Key, Value> {
         LruCache {
             map: BTreeMap::new(),
             list: VecDeque::new(),
@@ -200,18 +204,20 @@ impl<Key, Value> LruCache<Key, Value>
             self.list.push_back(key.clone());
         }
 
-        self.map
-            .insert(key, (value, Instant::now()))
-            .map(|pair| pair.0)
+        self.map.insert(key, (value, Instant::now())).map(
+            |pair| pair.0,
+        )
     }
 
     /// Removes a key-value pair from the cache.
     pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<Value>
-        where Key: Borrow<Q>,
-              Q: Ord
+    where
+        Key: Borrow<Q>,
+        Q: Ord,
     {
-        self.list
-            .retain(|k| *k.borrow() < *key || *k.borrow() > *key);
+        self.list.retain(
+            |k| *k.borrow() < *key || *k.borrow() > *key,
+        );
         self.map.remove(key).map(|(value, _)| value)
     }
 
@@ -224,26 +230,26 @@ impl<Key, Value> LruCache<Key, Value>
     /// Retrieves a reference to the value stored under `key`, or `None` if the key doesn't exist.
     /// Also removes expired elements and updates the time.
     pub fn get<Q: ?Sized>(&mut self, key: &Q) -> Option<&Value>
-        where Key: Borrow<Q>,
-              Q: Ord
+    where
+        Key: Borrow<Q>,
+        Q: Ord,
     {
         self.remove_expired();
         let list = &mut self.list;
 
-        self.map
-            .get_mut(key)
-            .map(|result| {
-                     Self::update_key(list, key);
-                     result.1 = Instant::now();
-                     &result.0
-                 })
+        self.map.get_mut(key).map(|result| {
+            Self::update_key(list, key);
+            result.1 = Instant::now();
+            &result.0
+        })
     }
 
     /// Returns a reference to the value with the given `key`, if present and not expired, without
     /// updating the timestamp.
     pub fn peek<Q: ?Sized>(&self, key: &Q) -> Option<&Value>
-        where Key: Borrow<Q>,
-              Q: Ord
+    where
+        Key: Borrow<Q>,
+        Q: Ord,
     {
         if self.expired(key) {
             return None;
@@ -254,36 +260,32 @@ impl<Key, Value> LruCache<Key, Value>
     /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
     /// exist.  Also removes expired elements and updates the time.
     pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut Value>
-        where Key: Borrow<Q>,
-              Q: Ord
+    where
+        Key: Borrow<Q>,
+        Q: Ord,
     {
         self.remove_expired();
         let list = &mut self.list;
 
-        self.map
-            .get_mut(key)
-            .map(|result| {
-                     Self::update_key(list, key);
-                     result.1 = Instant::now();
-                     &mut result.0
-                 })
+        self.map.get_mut(key).map(|result| {
+            Self::update_key(list, key);
+            result.1 = Instant::now();
+            &mut result.0
+        })
     }
 
     /// Returns whether `key` exists in the cache or not.
     pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
-        where Key: Borrow<Q>,
-              Q: Ord
+    where
+        Key: Borrow<Q>,
+        Q: Ord,
     {
         self.map.contains_key(key) && !self.expired(key)
     }
 
     /// Returns the size of the cache, i.e. the number of cached non-expired key-value pairs.
     pub fn len(&self) -> usize {
-        self.map.len() -
-        self.list
-            .iter()
-            .take_while(|key| self.expired(key))
-            .count()
+        self.map.len() - self.list.iter().take_while(|key| self.expired(key)).count()
     }
 
     /// Returns `true` if there are no non-expired entries in the cache.
@@ -300,12 +302,14 @@ impl<Key, Value> LruCache<Key, Value>
         //     None => Entry::Vacant(VacantEntry{key: key, cache: self}),
         // }
         if self.contains_key(&key) {
-            Entry::Occupied(OccupiedEntry { value: self.get_mut(&key).expect("key not found") })
+            Entry::Occupied(OccupiedEntry {
+                value: self.get_mut(&key).expect("key not found"),
+            })
         } else {
             Entry::Vacant(VacantEntry {
-                              key: key,
-                              cache: self,
-                          })
+                key: key,
+                cache: self,
+            })
         }
     }
 
@@ -337,20 +341,22 @@ impl<Key, Value> LruCache<Key, Value>
     }
 
     fn expired<Q: ?Sized>(&self, key: &Q) -> bool
-        where Key: Borrow<Q>,
-              Q: Ord
+    where
+        Key: Borrow<Q>,
+        Q: Ord,
     {
         let now = Instant::now();
         self.has_expiry() &&
-        self.map
-            .get(key)
-            .map_or(false, |v| v.1 + self.time_to_live < now)
+            self.map.get(key).map_or(
+                false,
+                |v| v.1 + self.time_to_live < now,
+            )
     }
 
     fn remove_oldest_element(&mut self) {
-        let _ = self.list
-            .pop_front()
-            .map(|key| assert!(self.map.remove(&key).is_some()));
+        let _ = self.list.pop_front().map(|key| {
+            assert!(self.map.remove(&key).is_some())
+        });
     }
 
     fn check_time_expired(&self) -> bool {
@@ -359,8 +365,9 @@ impl<Key, Value> LruCache<Key, Value>
 
     // Move `key` in the ordered list to the last
     fn update_key<Q: ?Sized>(list: &mut VecDeque<Key>, key: &Q)
-        where Key: Borrow<Q>,
-              Q: Ord
+    where
+        Key: Borrow<Q>,
+        Q: Ord,
     {
         if let Some(pos) = list.iter().position(|k| k.borrow() == key) {
             let k = list.remove(pos).unwrap();
@@ -376,8 +383,9 @@ impl<Key, Value> LruCache<Key, Value>
 }
 
 impl<Key, Value> Clone for LruCache<Key, Value>
-    where Key: Clone,
-          Value: Clone
+where
+    Key: Clone,
+    Value: Clone,
 {
     fn clone(&self) -> LruCache<Key, Value> {
         LruCache {
@@ -442,7 +450,8 @@ mod test {
     }
 
     fn generate_random_vec<T>(len: usize) -> Vec<T>
-        where T: rand::Rand
+    where
+        T: rand::Rand,
     {
         let mut vec = Vec::<T>::with_capacity(len);
         for _ in 0..len {
@@ -588,8 +597,10 @@ mod test {
         let _ = lru_cache.insert(2, 2);
         sleep(1);
 
-        assert_eq!(vec![(&0, &0), (&1, &1), (&2, &2)],
-                   lru_cache.iter().collect::<Vec<_>>());
+        assert_eq!(
+            vec![(&0, &0), (&1, &1), (&2, &2)],
+            lru_cache.iter().collect::<Vec<_>>()
+        );
 
         let initial_instant0 = lru_cache.map[&0].1;
         let initial_instant2 = lru_cache.map[&2].1;
@@ -615,15 +626,19 @@ mod test {
         let _ = lru_cache.insert(3, 3);
 
         sleep(30);
-        assert_eq!(vec![(&0, &0), (&2, &2), (&3, &3)],
-                   lru_cache.peek_iter().collect::<Vec<_>>());
+        assert_eq!(
+            vec![(&0, &0), (&2, &2), (&3, &3)],
+            lru_cache.peek_iter().collect::<Vec<_>>()
+        );
         assert_eq!(Some(&2), lru_cache.get(&2));
         let _ = lru_cache.insert(1, 1);
         let _ = lru_cache.insert(4, 4);
 
         sleep(30);
-        assert_eq!(vec![(&1, &1), (&2, &2), (&4, &4)],
-                   lru_cache.peek_iter().collect::<Vec<_>>());
+        assert_eq!(
+            vec![(&1, &1), (&2, &2), (&4, &4)],
+            lru_cache.peek_iter().collect::<Vec<_>>()
+        );
 
         sleep(30);
         assert!(lru_cache.is_empty());
