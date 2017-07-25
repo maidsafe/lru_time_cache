@@ -7,10 +7,10 @@ license = "GPL-3.0"
 name = "lru_time_cache"
 readme = "README.md"
 repository = "https://github.com/maidsafe/lru_time_cache"
-version = "0.6.0"
+version = "0.7.0"
 
 [dependencies]
-fake_clock = { version = "~0.1", optional = true }
+fake_clock = { version = "~0.2", optional = true }
 
 [dev-dependencies]
 rand = "~0.3.15"
