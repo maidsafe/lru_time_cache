@@ -1,5 +1,9 @@
 # Lru Time Cache - Change Log
 
+## [0.8.0]
+- Use rust 1.22.1 stable / 2017-12-02 nightly
+- rustfmt 0.9.0 and clippy-0.0.175
+
 ## [0.7.0]
 - Use rust 1.19 stable / 2017-07-20 nightly
 - rustfmt 0.9.0 and clippy-0.0.144

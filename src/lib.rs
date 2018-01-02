@@ -58,8 +58,8 @@
         unused_comparisons, unused_features, unused_parens, while_true)]
 #![warn(trivial_casts, trivial_numeric_casts, unused_extern_crates, unused_import_braces,
         unused_qualifications, unused_results)]
-#![allow(box_pointers, fat_ptr_transmutes, missing_copy_implementations,
-         missing_debug_implementations, variant_size_differences)]
+#![allow(box_pointers, missing_copy_implementations, missing_debug_implementations,
+         variant_size_differences)]
 
 #[cfg(test)]
 extern crate rand;
@@ -618,14 +618,14 @@ mod test {
 
     #[test]
     fn peek_iter() {
-        let time_to_live = Duration::from_millis(50);
+        let time_to_live = Duration::from_millis(500);
         let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
         let _ = lru_cache.insert(0, 0);
         let _ = lru_cache.insert(2, 2);
         let _ = lru_cache.insert(3, 3);
 
-        sleep(30);
+        sleep(300);
         assert_eq!(
             vec![(&0, &0), (&2, &2), (&3, &3)],
             lru_cache.peek_iter().collect::<Vec<_>>()
@@ -634,30 +634,30 @@ mod test {
         let _ = lru_cache.insert(1, 1);
         let _ = lru_cache.insert(4, 4);
 
-        sleep(30);
+        sleep(300);
         assert_eq!(
             vec![(&1, &1), (&2, &2), (&4, &4)],
             lru_cache.peek_iter().collect::<Vec<_>>()
         );
 
-        sleep(30);
+        sleep(300);
         assert!(lru_cache.is_empty());
     }
 
     #[test]
     fn update_time_check() {
-        let time_to_live = Duration::from_millis(50);
+        let time_to_live = Duration::from_millis(500);
         let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
         assert_eq!(lru_cache.len(), 0);
         let _ = lru_cache.insert(0, 0);
         assert_eq!(lru_cache.len(), 1);
 
-        sleep(30);
+        sleep(300);
         assert_eq!(Some(&0), lru_cache.get(&0));
-        sleep(30);
+        sleep(300);
         assert_eq!(Some(&0), lru_cache.peek(&0));
-        sleep(30);
+        sleep(300);
         assert_eq!(None, lru_cache.peek(&0));
     }
 
