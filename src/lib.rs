@@ -154,7 +154,7 @@ where
         LruCache {
             map: BTreeMap::new(),
             list: VecDeque::new(),
-            capacity: capacity,
+            capacity,
             time_to_live: Duration::new(std::u64::MAX, 999_999_999),
         }
     }
@@ -165,7 +165,7 @@ where
             map: BTreeMap::new(),
             list: VecDeque::new(),
             capacity: usize::MAX,
-            time_to_live: time_to_live,
+            time_to_live,
         }
     }
 
@@ -177,8 +177,8 @@ where
         LruCache {
             map: BTreeMap::new(),
             list: VecDeque::new(),
-            capacity: capacity,
-            time_to_live: time_to_live,
+            capacity,
+            time_to_live,
         }
     }
 
@@ -299,7 +299,7 @@ where
             })
         } else {
             Entry::Vacant(VacantEntry {
-                key: key,
+                key,
                 cache: self,
             })
         }
@@ -315,7 +315,7 @@ where
         Iter {
             map_iter_mut: self.map.iter_mut(),
             list: &mut self.list,
-            has_expiry: has_expiry,
+            has_expiry,
             lru_cache_ttl: self.time_to_live,
         }
     }
