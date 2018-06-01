@@ -34,34 +34,41 @@
 //! # }
 //! ```
 
-#![doc(html_logo_url =
-           "https://raw.githubusercontent.com/maidsafe/QA/master/Images/maidsafe_logo.png",
-       html_favicon_url = "https://maidsafe.net/img/favicon.ico",
-       html_root_url = "https://docs.rs/lru_time_cache")]
-
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/maidsafe/QA/master/Images/maidsafe_logo.png",
+    html_favicon_url = "https://maidsafe.net/img/favicon.ico",
+    html_root_url = "https://docs.rs/lru_time_cache"
+)]
 // For explanation of lint checks, run `rustc -W help` or see
 // https://github.com/maidsafe/QA/blob/master/Documentation/Rust%20Lint%20Checks.md
-#![forbid(bad_style, exceeding_bitshifts, mutable_transmutes, no_mangle_const_items,
-          unknown_crate_types, warnings)]
-#![deny(deprecated, improper_ctypes, missing_docs,
-        non_shorthand_field_patterns, overflowing_literals, plugin_as_library,
-        private_no_mangle_fns, private_no_mangle_statics, stable_features, unconditional_recursion,
-        unknown_lints, unsafe_code, unused, unused_allocation, unused_attributes,
-        unused_comparisons, unused_features, unused_parens, while_true)]
-#![warn(trivial_casts, trivial_numeric_casts, unused_extern_crates, unused_import_braces,
-        unused_qualifications, unused_results)]
-#![allow(box_pointers, missing_copy_implementations, missing_debug_implementations,
-         variant_size_differences)]
+#![forbid(
+    bad_style, exceeding_bitshifts, mutable_transmutes, no_mangle_const_items, unknown_crate_types,
+    warnings
+)]
+#![deny(
+    deprecated, improper_ctypes, missing_docs, non_shorthand_field_patterns, overflowing_literals,
+    plugin_as_library, private_no_mangle_fns, private_no_mangle_statics, stable_features,
+    unconditional_recursion, unknown_lints, unsafe_code, unused, unused_allocation,
+    unused_attributes, unused_comparisons, unused_features, unused_parens, while_true
+)]
+#![warn(
+    trivial_casts, trivial_numeric_casts, unused_extern_crates, unused_import_braces,
+    unused_qualifications, unused_results
+)]
+#![allow(
+    box_pointers, missing_copy_implementations, missing_debug_implementations,
+    variant_size_differences
+)]
 
-#[cfg(test)]
-extern crate rand;
 #[cfg(feature = "fake_clock")]
 extern crate fake_clock;
+#[cfg(test)]
+extern crate rand;
 
 #[cfg(feature = "fake_clock")]
 use fake_clock::FakeClock as Instant;
 use std::borrow::Borrow;
-use std::collections::{BTreeMap, VecDeque, btree_map};
+use std::collections::{btree_map, BTreeMap, VecDeque};
 use std::time::Duration;
 #[cfg(not(feature = "fake_clock"))]
 use std::time::Instant;
@@ -154,7 +161,7 @@ where
         LruCache {
             map: BTreeMap::new(),
             list: VecDeque::new(),
-            capacity: capacity,
+            capacity,
             time_to_live: Duration::new(std::u64::MAX, 999_999_999),
         }
     }
@@ -165,7 +172,7 @@ where
             map: BTreeMap::new(),
             list: VecDeque::new(),
             capacity: usize::MAX,
-            time_to_live: time_to_live,
+            time_to_live,
         }
     }
 
@@ -177,8 +184,8 @@ where
         LruCache {
             map: BTreeMap::new(),
             list: VecDeque::new(),
-            capacity: capacity,
-            time_to_live: time_to_live,
+            capacity,
+            time_to_live,
         }
     }
 
@@ -196,9 +203,9 @@ where
             self.list.push_back(key.clone());
         }
 
-        self.map.insert(key, (value, Instant::now())).map(
-            |pair| pair.0,
-        )
+        self.map
+            .insert(key, (value, Instant::now()))
+            .map(|pair| pair.0)
     }
 
     /// Removes a key-value pair from the cache.
@@ -207,9 +214,8 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        self.list.retain(
-            |k| *k.borrow() < *key || *k.borrow() > *key,
-        );
+        self.list
+            .retain(|k| *k.borrow() < *key || *k.borrow() > *key);
         self.map.remove(key).map(|(value, _)| value)
     }
 
@@ -298,10 +304,7 @@ where
                 value: self.get_mut(&key).expect("key not found"),
             })
         } else {
-            Entry::Vacant(VacantEntry {
-                key: key,
-                cache: self,
-            })
+            Entry::Vacant(VacantEntry { key, cache: self })
         }
     }
 
@@ -315,7 +318,7 @@ where
         Iter {
             map_iter_mut: self.map.iter_mut(),
             list: &mut self.list,
-            has_expiry: has_expiry,
+            has_expiry,
             lru_cache_ttl: self.time_to_live,
         }
     }
@@ -338,17 +341,18 @@ where
         Q: Ord,
     {
         let now = Instant::now();
-        self.has_expiry() &&
-            self.map.get(key).map_or(
-                false,
-                |v| v.1 + self.time_to_live < now,
-            )
+        self.has_expiry()
+            && self
+                .map
+                .get(key)
+                .map_or(false, |v| v.1 + self.time_to_live < now)
     }
 
     fn remove_oldest_element(&mut self) {
-        let _ = self.list.pop_front().map(|key| {
-            assert!(self.map.remove(&key).is_some())
-        });
+        let _ = self
+            .list
+            .pop_front()
+            .map(|key| assert!(self.map.remove(&key).is_some()));
     }
 
     fn check_time_expired(&self) -> bool {
@@ -563,7 +567,12 @@ mod test {
                 assert_eq!(lru_cache.len(), i);
             }
 
-            let _ = lru_cache.insert(Temp { id: generate_random_vec::<u8>(64) }, i);
+            let _ = lru_cache.insert(
+                Temp {
+                    id: generate_random_vec::<u8>(64),
+                },
+                i,
+            );
 
             if i < size {
                 assert_eq!(lru_cache.len(), i + 1);
@@ -573,7 +582,12 @@ mod test {
         }
 
         sleep(101);
-        let _ = lru_cache.insert(Temp { id: generate_random_vec::<u8>(64) }, 1);
+        let _ = lru_cache.insert(
+            Temp {
+                id: generate_random_vec::<u8>(64),
+            },
+            1,
+        );
 
         assert_eq!(lru_cache.len(), 1);
     }
