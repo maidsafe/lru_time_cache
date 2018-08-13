@@ -249,10 +249,8 @@ where
         Q: Ord,
     {
         self.map.get(key).and_then(|&(ref value, t)| {
-            if let Some(&ttl) = self.time_to_live.as_ref() {
-                if t + ttl < Instant::now() {
-                    return None;
-                }
+            if self.time_to_live.map_or(false, |ttl| t + ttl < Instant::now()) {
+                return None;
             }
             Some(value)
         })
@@ -281,10 +279,7 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        self.map.get(key).map_or(false, |v| {
-            self.time_to_live
-                .map_or(true, |ttl| v.1 + ttl >= Instant::now())
-        })
+        self.peek(key).is_some()
     }
 
     /// Returns the size of the cache, i.e. the number of cached non-expired key-value pairs.
