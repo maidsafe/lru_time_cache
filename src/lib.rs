@@ -365,6 +365,8 @@ where
             // we have found one item not expired, we must insert it back
             let _ = map.insert(list[i].clone(), val);
             let _ = list.drain(..i);
+        } else if map.is_empty() {
+            list.clear();
         }
     }
 }
