@@ -249,7 +249,10 @@ where
         Q: Ord,
     {
         self.map.get(key).and_then(|&(ref value, t)| {
-            if self.time_to_live.map_or(false, |ttl| t + ttl < Instant::now()) {
+            if self
+                .time_to_live
+                .map_or(false, |ttl| t + ttl < Instant::now())
+            {
                 return None;
             }
             Some(value)
