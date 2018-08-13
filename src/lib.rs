@@ -220,9 +220,12 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        self.list
-            .retain(|k| *k.borrow() < *key || *k.borrow() > *key); // ????
-        self.map.remove(key).map(|(value, _)| value)
+        if let Some(p) = self.list.iter().position(|l| l.borrow() == key) {
+            let _ = self.list.remove(p);
+            self.map.remove(key).map(|(value, _)| value)
+        } else {
+            None
+        }
     }
 
     /// Clears the `LruCache`, removing all values.
@@ -345,19 +348,18 @@ where
         Q: Ord,
     {
         if let Some(pos) = list.iter().position(|k| k.borrow() == key) {
-            let k = list.remove(pos);
-            list.push(k);
+            let (_, tail) = list.split_at_mut(pos);
+            tail.rotate_left(1);
         }
     }
 
     fn remove_expired(&mut self) {
         if let Some(ttl) = self.time_to_live {
-            let now = Instant::now();
             if let Some(pos) = self
                 .list
                 .iter()
                 .map(|key| self.map.get(key))
-                .position(|val| val.map_or(true, |v| v.1 + ttl >= now))
+                .position(|val| val.map_or(true, |v| v.1 + ttl >= Instant::now()))
             {
                 for key in self.list.drain(..pos) {
                     assert!(self.map.remove(&key).is_some());
