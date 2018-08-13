@@ -220,12 +220,14 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        if let Some(p) = self.list.iter().position(|l| l.borrow() == key) {
-            let _ = self.list.remove(p);
-            self.map.remove(key).map(|(value, _)| value)
-        } else {
-            None
-        }
+        self.map.remove(key)
+            .map(|(value, _)| {
+                let _ = self.list
+                    .iter()
+                    .position(|l| l.borrow() == key)
+                    .map(|p| self.list.remove(p));
+                value
+            })
     }
 
     /// Clears the `LruCache`, removing all values.
@@ -251,15 +253,11 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        self.map.get(key).and_then(|&(ref value, t)| {
-            if self
-                .time_to_live
-                .map_or(false, |ttl| t + ttl < Instant::now())
-            {
-                return None;
-            }
-            Some(value)
-        })
+        self.map
+            .get(key)
+            .into_iter()
+            .find(|&(_, t)| self.time_to_live.map_or(true, |ttl| *t + ttl >= Instant::now()))
+            .map(|&(ref value, _)| value)
     }
 
     /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
@@ -270,8 +268,8 @@ where
         Q: Ord,
     {
         self.remove_expired();
-        let list = &mut self.list;
 
+        let list = &mut self.list;
         self.map.get_mut(key).map(|result| {
             Self::update_key(list, key);
             result.1 = Instant::now();
@@ -354,17 +352,19 @@ where
     }
 
     fn remove_expired(&mut self) {
-        if let Some(ttl) = self.time_to_live {
-            if let Some(pos) = self
-                .list
-                .iter()
-                .map(|key| self.map.get(key))
-                .position(|val| val.map_or(true, |v| v.1 + ttl >= Instant::now()))
-            {
-                for key in self.list.drain(..pos) {
-                    assert!(self.map.remove(&key).is_some());
-                }
-            }
+        let (map, list) = (&mut self.map, &mut self.list);
+        if let Some((i, val)) = self
+            .time_to_live
+            .and_then(|ttl| list
+                      .iter()
+                      .enumerate()
+                      .filter_map(|(i, key)| map.remove(key).map(|val| (i, val)))
+                      .filter(|&(_, (_, t))| t + ttl >= Instant::now())
+                      .next())
+        {
+            // we have found one item not expired, we must insert it back
+            let _ = map.insert(list[i].clone(), val);
+            let _ = list.drain(..i);
         }
     }
 }
