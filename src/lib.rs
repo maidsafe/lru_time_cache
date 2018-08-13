@@ -109,8 +109,10 @@ where
     fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
         let now = Instant::now();
         let not_expired = match self.lru_cache_ttl {
-            Some(ttl) => self.map_iter_mut.find(|&(_, &mut (_, instant))| instant + ttl > now),
-            None => self.map_iter_mut.next()
+            Some(ttl) => self
+                .map_iter_mut
+                .find(|&(_, &mut (_, instant))| instant + ttl > now),
+            None => self.map_iter_mut.next(),
         };
 
         not_expired.map(|(key, &mut (ref value, ref mut instant))| {
@@ -136,8 +138,10 @@ where
     fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
         let now = Instant::now();
         let not_expired = match self.lru_cache_ttl {
-            Some(ttl) => self.map_iter.find(|&(_, &(_, instant))| instant + ttl > now),
-            None => self.map_iter.next()
+            Some(ttl) => self
+                .map_iter
+                .find(|&(_, &(_, instant))| instant + ttl > now),
+            None => self.map_iter.next(),
         };
         not_expired.map(|(key, &(ref value, _))| (key, value))
     }
@@ -244,15 +248,14 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        self.map.get(key)
-            .and_then(|&(ref value, t)| {
-                if let Some(&ttl) = self.time_to_live.as_ref() {
-                    if t + ttl < Instant::now() {
-                        return None;
-                    }
+        self.map.get(key).and_then(|&(ref value, t)| {
+            if let Some(&ttl) = self.time_to_live.as_ref() {
+                if t + ttl < Instant::now() {
+                    return None;
                 }
-                Some(value)
-            })
+            }
+            Some(value)
+        })
     }
 
     /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
@@ -278,38 +281,26 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        self
-            .map
-            .get(key)
-            .map_or(false, 
-                    |v| self.time_to_live.map_or(true, |ttl| v.1 + ttl >= Instant::now()))
+        self.map.get(key).map_or(false, |v| {
+            self.time_to_live
+                .map_or(true, |ttl| v.1 + ttl >= Instant::now())
+        })
     }
 
     /// Returns the size of the cache, i.e. the number of cached non-expired key-value pairs.
     pub fn len(&self) -> usize {
-        self.time_to_live.as_ref()
-            .map_or(self.map.len(), |&ttl|
-            {
-                let now = Instant::now();
-                self
-                    .map
-                    .values()
-                    .filter(|v| v.1 + ttl >= now)
-                    .count()
-            })
+        self.time_to_live.map_or(self.map.len(), |ttl| {
+            let now = Instant::now();
+            self.map.values().filter(|v| v.1 + ttl >= now).count()
+        })
     }
 
     /// Returns `true` if there are no non-expired entries in the cache.
     pub fn is_empty(&self) -> bool {
-        self.time_to_live.as_ref()
-            .map_or(self.list.is_empty(), |&ttl|
-            {
-                let now = Instant::now();
-                self
-                    .map
-                    .values()
-                    .all(|v| v.1 + ttl < now)
-            })
+        self.time_to_live.map_or(self.list.is_empty(), |ttl| {
+            let now = Instant::now();
+            self.map.values().all(|v| v.1 + ttl < now)
+        })
     }
 
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
@@ -364,7 +355,9 @@ where
     fn remove_expired(&mut self) {
         if let Some(ttl) = self.time_to_live {
             let now = Instant::now();
-            if let Some(pos) = self.list.iter()
+            if let Some(pos) = self
+                .list
+                .iter()
                 .map(|key| self.map.get(key))
                 .position(|val| val.map_or(true, |v| v.1 + ttl >= now))
             {
