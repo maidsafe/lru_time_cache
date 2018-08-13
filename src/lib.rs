@@ -220,14 +220,14 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        self.map.remove(key)
-            .map(|(value, _)| {
-                let _ = self.list
-                    .iter()
-                    .position(|l| l.borrow() == key)
-                    .map(|p| self.list.remove(p));
-                value
-            })
+        self.map.remove(key).map(|(value, _)| {
+            let _ = self
+                .list
+                .iter()
+                .position(|l| l.borrow() == key)
+                .map(|p| self.list.remove(p));
+            value
+        })
     }
 
     /// Clears the `LruCache`, removing all values.
@@ -256,7 +256,10 @@ where
         self.map
             .get(key)
             .into_iter()
-            .find(|&(_, t)| self.time_to_live.map_or(true, |ttl| *t + ttl >= Instant::now()))
+            .find(|&(_, t)| {
+                self.time_to_live
+                    .map_or(true, |ttl| *t + ttl >= Instant::now())
+            })
             .map(|&(ref value, _)| value)
     }
 
@@ -353,15 +356,13 @@ where
 
     fn remove_expired(&mut self) {
         let (map, list) = (&mut self.map, &mut self.list);
-        if let Some((i, val)) = self
-            .time_to_live
-            .and_then(|ttl| list
-                      .iter()
-                      .enumerate()
-                      .filter_map(|(i, key)| map.remove(key).map(|val| (i, val)))
-                      .filter(|&(_, (_, t))| t + ttl >= Instant::now())
-                      .next())
-        {
+        if let Some((i, val)) = self.time_to_live.and_then(|ttl| {
+            list.iter()
+                .enumerate()
+                .filter_map(|(i, key)| map.remove(key).map(|val| (i, val)))
+                .filter(|&(_, (_, t))| t + ttl >= Instant::now())
+                .next()
+        }) {
             // we have found one item not expired, we must insert it back
             let _ = map.insert(list[i].clone(), val);
             let _ = list.drain(..i);
