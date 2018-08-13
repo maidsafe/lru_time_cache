@@ -106,24 +106,25 @@ where
 {
     type Item = (&'a Key, &'a Value);
 
-    #[cfg_attr(feature = "cargo-clippy", allow(while_let_on_iterator))]
     fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
         let now = Instant::now();
-        while let Some((key, &mut (ref value, ref mut instant))) = self.map_iter_mut.next() {
-            if self.lru_cache_ttl.map_or(true, |ttl| *instant + ttl > now) {
-                LruCache::<Key, Value>::update_key(self.list, key);
-                *instant = now;
-                return Some((key, value));
-            }
-        }
-        None
+        let not_expired = match self.lru_cache_ttl {
+            Some(ttl) => self.map_iter_mut.find(|&(_, &mut (_, instant))| instant + ttl > now),
+            None => self.map_iter_mut.next()
+        };
+
+        not_expired.map(|(key, &mut (ref value, ref mut instant))| {
+            LruCache::<Key, Value>::update_key(self.list, key);
+            *instant = now;
+            (key, value)
+        })
     }
 }
 
 /// An iterator over an `LruCache`'s entries that does not modify the timestamp.
 pub struct PeekIter<'a, Key: 'a, Value: 'a> {
     map_iter: btree_map::Iter<'a, Key, (Value, Instant)>,
-    lru_cache: &'a LruCache<Key, Value>,
+    lru_cache_ttl: Option<Duration>,
 }
 
 impl<'a, Key, Value> Iterator for PeekIter<'a, Key, Value>
@@ -132,14 +133,13 @@ where
 {
     type Item = (&'a Key, &'a Value);
 
-    #[cfg_attr(feature = "cargo-clippy", allow(while_let_on_iterator))]
     fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
-        while let Some((key, &(ref value, _))) = self.map_iter.next() {
-            if !self.lru_cache.expired(key) {
-                return Some((key, value));
-            }
-        }
-        None
+        let now = Instant::now();
+        let not_expired = match self.lru_cache_ttl {
+            Some(ttl) => self.map_iter.find(|&(_, &(_, instant))| instant + ttl > now),
+            None => self.map_iter.next()
+        };
+        not_expired.map(|(key, &(ref value, _))| (key, value))
     }
 }
 
@@ -278,34 +278,38 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        self.map.contains_key(key) && !self.expired(key)
+        self
+            .map
+            .get(key)
+            .map_or(false, 
+                    |v| self.time_to_live.map_or(true, |ttl| v.1 + ttl >= Instant::now()))
     }
 
     /// Returns the size of the cache, i.e. the number of cached non-expired key-value pairs.
     pub fn len(&self) -> usize {
-        if let Some(&ttl) = self.time_to_live.as_ref() {
-            let now = Instant::now();
-            self
-                .map
-                .values()
-                .filter(|v| v.1 + ttl >= now)
-                .count()
-        } else {
-            self.map.len()
-        }
+        self.time_to_live.as_ref()
+            .map_or(self.map.len(), |&ttl|
+            {
+                let now = Instant::now();
+                self
+                    .map
+                    .values()
+                    .filter(|v| v.1 + ttl >= now)
+                    .count()
+            })
     }
 
     /// Returns `true` if there are no non-expired entries in the cache.
     pub fn is_empty(&self) -> bool {
-        if let Some(&ttl) = self.time_to_live.as_ref() {
-            let now = Instant::now();
-            self
-                .map
-                .values()
-                .all(|v| v.1 + ttl < now)
-        } else {
-            self.list.is_empty()
-        }
+        self.time_to_live.as_ref()
+            .map_or(self.list.is_empty(), |&ttl|
+            {
+                let now = Instant::now();
+                self
+                    .map
+                    .values()
+                    .all(|v| v.1 + ttl < now)
+            })
     }
 
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
@@ -341,23 +345,7 @@ where
     pub fn peek_iter(&self) -> PeekIter<Key, Value> {
         PeekIter {
             map_iter: self.map.iter(),
-            lru_cache: self,
-        }
-    }
-
-    fn expired<Q: ?Sized>(&self, key: &Q) -> bool
-    where
-        Key: Borrow<Q>,
-        Q: Ord,
-    {
-        if let Some(ttl) = self.time_to_live {
-            let now = Instant::now();
-                self
-                    .map
-                    .get(key)
-                    .map_or(false, |v| v.1 + ttl < now)
-        } else {
-            false
+            lru_cache_ttl: self.time_to_live,
         }
     }
 
