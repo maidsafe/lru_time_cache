@@ -291,17 +291,26 @@ where
 
     /// Returns the size of the cache, i.e. the number of cached non-expired key-value pairs.
     pub fn len(&self) -> usize {
-        self.time_to_live.map_or(self.map.len(), |ttl| {
-            let now = Instant::now();
-            self.map.values().filter(|v| v.1 + ttl >= now).count()
+        // FIXME: we assume most items are not expired => it is faster to count the expired ones.
+        //
+        // If this assumption is not valid, then directly iterating through all the
+        // map items and counting the not expired ones would be faster (no map lookups)
+        self.time_to_live.map_or(self.list.len(), |ttl| {
+            self.list
+                .iter()
+                .filter_map(|key| self.map.get(key))
+                .position(|&(_, t)| t + ttl >= Instant::now())
+                .map_or(0, |p| self.map.len() - p)
         })
     }
 
     /// Returns `true` if there are no non-expired entries in the cache.
     pub fn is_empty(&self) -> bool {
         self.time_to_live.map_or(self.list.is_empty(), |ttl| {
-            let now = Instant::now();
-            self.map.values().all(|v| v.1 + ttl < now)
+            self.list
+                .last()
+                .and_then(|key| self.map.get(key))
+                .map_or(true, |&(_, t)| t + ttl < Instant::now())
         })
     }
 
@@ -349,8 +358,7 @@ where
         Q: Ord,
     {
         if let Some(pos) = list.iter().position(|k| k.borrow() == key) {
-            let (_, tail) = list.split_at_mut(pos);
-            tail.rotate_left(1);
+            list[pos..].rotate_left(1);
         }
     }
 
@@ -360,8 +368,7 @@ where
             list.iter()
                 .enumerate()
                 .filter_map(|(i, key)| map.remove(key).map(|val| (i, val)))
-                .filter(|&(_, (_, t))| t + ttl >= Instant::now())
-                .next()
+                .find(|&(_, (_, t))| t + ttl >= Instant::now())
         }) {
             // we have found one item not expired, we must insert it back
             let _ = map.insert(list[i].clone(), val);
