@@ -68,7 +68,7 @@ extern crate rand;
 #[cfg(feature = "fake_clock")]
 use fake_clock::FakeClock as Instant;
 use std::borrow::Borrow;
-use std::collections::{btree_map, BTreeMap};
+use std::collections::{btree_map, BTreeMap, VecDeque};
 use std::time::Duration;
 #[cfg(not(feature = "fake_clock"))]
 use std::time::Instant;
@@ -96,7 +96,7 @@ pub struct OccupiedEntry<'a, Value: 'a> {
 /// An iterator over an `LruCache`'s entries that updates the timestamps as values are traversed.
 pub struct Iter<'a, Key: 'a, Value: 'a> {
     map_iter_mut: btree_map::IterMut<'a, Key, (Value, Instant)>,
-    list: &'a mut Vec<Key>,
+    list: &'a mut VecDeque<Key>,
     lru_cache_ttl: Option<Duration>,
 }
 
@@ -150,7 +150,7 @@ where
 /// Implementation of [LRU cache](index.html#least-recently-used-lru-cache).
 pub struct LruCache<Key, Value> {
     map: BTreeMap<Key, (Value, Instant)>,
-    list: Vec<Key>,
+    list: VecDeque<Key>,
     capacity: usize,
     time_to_live: Option<Duration>,
 }
@@ -163,7 +163,7 @@ where
     pub fn with_capacity(capacity: usize) -> LruCache<Key, Value> {
         LruCache {
             map: BTreeMap::new(),
-            list: Vec::with_capacity(capacity),
+            list: VecDeque::with_capacity(capacity),
             capacity,
             time_to_live: None,
         }
@@ -173,7 +173,7 @@ where
     pub fn with_expiry_duration(time_to_live: Duration) -> LruCache<Key, Value> {
         LruCache {
             map: BTreeMap::new(),
-            list: Vec::new(),
+            list: VecDeque::new(),
             capacity: usize::MAX,
             time_to_live: Some(time_to_live),
         }
@@ -186,7 +186,7 @@ where
     ) -> LruCache<Key, Value> {
         LruCache {
             map: BTreeMap::new(),
-            list: Vec::with_capacity(capacity),
+            list: VecDeque::with_capacity(capacity),
             capacity,
             time_to_live: Some(time_to_live),
         }
@@ -206,7 +206,7 @@ where
                     assert!(self.map.remove(&key).is_some());
                 }
             }
-            self.list.push(key.clone());
+            self.list.push_back(key.clone());
         }
 
         self.map
@@ -308,7 +308,7 @@ where
     pub fn is_empty(&self) -> bool {
         self.time_to_live.map_or(self.list.is_empty(), |ttl| {
             self.list
-                .last()
+                .back()
                 .and_then(|key| self.map.get(key))
                 .map_or(true, |&(_, t)| t + ttl < Instant::now())
         })
@@ -352,13 +352,13 @@ where
     }
 
     // Move `key` in the ordered list to the last
-    fn update_key<Q: ?Sized>(list: &mut Vec<Key>, key: &Q)
+    fn update_key<Q: ?Sized>(list: &mut VecDeque<Key>, key: &Q)
     where
         Key: Borrow<Q>,
         Q: Ord,
     {
         if let Some(pos) = list.iter().position(|k| k.borrow() == key) {
-            list[pos..].rotate_left(1);
+            let _ = list.remove(pos).map(|it| list.push_back(it));
         }
     }
 
@@ -619,8 +619,8 @@ mod test {
         assert_ne!(lru_cache.map[&0].1, initial_instant0);
         assert_eq!(lru_cache.map[&2].1, initial_instant2);
 
-        assert_eq!(*lru_cache.list.first().unwrap(), 2);
-        assert_eq!(*lru_cache.list.last().unwrap(), 1);
+        assert_eq!(*lru_cache.list.front().unwrap(), 2);
+        assert_eq!(*lru_cache.list.back().unwrap(), 1);
     }
 
     #[test]
