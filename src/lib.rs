@@ -97,8 +97,7 @@ pub struct OccupiedEntry<'a, Value: 'a> {
 pub struct Iter<'a, Key: 'a, Value: 'a> {
     map_iter_mut: btree_map::IterMut<'a, Key, (Value, Instant)>,
     list: &'a mut VecDeque<Key>,
-    has_expiry: bool,
-    lru_cache_ttl: Duration,
+    lru_cache_ttl: Option<Duration>,
 }
 
 impl<'a, Key, Value> Iterator for Iter<'a, Key, Value>
@@ -107,24 +106,27 @@ where
 {
     type Item = (&'a Key, &'a Value);
 
-    #[cfg_attr(feature = "cargo-clippy", allow(while_let_on_iterator))]
     fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
         let now = Instant::now();
-        while let Some((key, &mut (ref value, ref mut instant))) = self.map_iter_mut.next() {
-            if !self.has_expiry || *instant + self.lru_cache_ttl > now {
-                LruCache::<Key, Value>::update_key(self.list, key);
-                *instant = now;
-                return Some((key, value));
-            }
-        }
-        None
+        let not_expired = match self.lru_cache_ttl {
+            Some(ttl) => self
+                .map_iter_mut
+                .find(|&(_, &mut (_, instant))| instant + ttl > now),
+            None => self.map_iter_mut.next(),
+        };
+
+        not_expired.map(|(key, &mut (ref value, ref mut instant))| {
+            LruCache::<Key, Value>::update_key(self.list, key);
+            *instant = now;
+            (key, value)
+        })
     }
 }
 
 /// An iterator over an `LruCache`'s entries that does not modify the timestamp.
 pub struct PeekIter<'a, Key: 'a, Value: 'a> {
     map_iter: btree_map::Iter<'a, Key, (Value, Instant)>,
-    lru_cache: &'a LruCache<Key, Value>,
+    lru_cache_ttl: Option<Duration>,
 }
 
 impl<'a, Key, Value> Iterator for PeekIter<'a, Key, Value>
@@ -133,14 +135,15 @@ where
 {
     type Item = (&'a Key, &'a Value);
 
-    #[cfg_attr(feature = "cargo-clippy", allow(while_let_on_iterator))]
     fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
-        while let Some((key, &(ref value, _))) = self.map_iter.next() {
-            if !self.lru_cache.expired(key) {
-                return Some((key, value));
-            }
-        }
-        None
+        let now = Instant::now();
+        let not_expired = match self.lru_cache_ttl {
+            Some(ttl) => self
+                .map_iter
+                .find(|&(_, &(_, instant))| instant + ttl > now),
+            None => self.map_iter.next(),
+        };
+        not_expired.map(|(key, &(ref value, _))| (key, value))
     }
 }
 
@@ -149,7 +152,7 @@ pub struct LruCache<Key, Value> {
     map: BTreeMap<Key, (Value, Instant)>,
     list: VecDeque<Key>,
     capacity: usize,
-    time_to_live: Duration,
+    time_to_live: Option<Duration>,
 }
 
 impl<Key, Value> LruCache<Key, Value>
@@ -160,9 +163,9 @@ where
     pub fn with_capacity(capacity: usize) -> LruCache<Key, Value> {
         LruCache {
             map: BTreeMap::new(),
-            list: VecDeque::new(),
+            list: VecDeque::with_capacity(capacity),
             capacity,
-            time_to_live: Duration::new(std::u64::MAX, 999_999_999),
+            time_to_live: None,
         }
     }
 
@@ -172,7 +175,7 @@ where
             map: BTreeMap::new(),
             list: VecDeque::new(),
             capacity: usize::MAX,
-            time_to_live,
+            time_to_live: Some(time_to_live),
         }
     }
 
@@ -183,9 +186,9 @@ where
     ) -> LruCache<Key, Value> {
         LruCache {
             map: BTreeMap::new(),
-            list: VecDeque::new(),
+            list: VecDeque::with_capacity(capacity),
             capacity,
-            time_to_live,
+            time_to_live: Some(time_to_live),
         }
     }
 
@@ -197,8 +200,11 @@ where
         if self.map.contains_key(&key) {
             Self::update_key(&mut self.list, &key);
         } else {
-            while self.check_time_expired() || self.map.len() == self.capacity {
-                self.remove_oldest_element();
+            self.remove_expired();
+            if self.map.len() >= self.capacity {
+                for key in self.list.drain(..self.map.len() - self.capacity + 1) {
+                    assert!(self.map.remove(&key).is_some());
+                }
             }
             self.list.push_back(key.clone());
         }
@@ -214,9 +220,14 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        self.list
-            .retain(|k| *k.borrow() < *key || *k.borrow() > *key);
-        self.map.remove(key).map(|(value, _)| value)
+        self.map.remove(key).map(|(value, _)| {
+            let _ = self
+                .list
+                .iter()
+                .position(|l| l.borrow() == key)
+                .map(|p| self.list.remove(p));
+            value
+        })
     }
 
     /// Clears the `LruCache`, removing all values.
@@ -232,14 +243,7 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        self.remove_expired();
-        let list = &mut self.list;
-
-        self.map.get_mut(key).map(|result| {
-            Self::update_key(list, key);
-            result.1 = Instant::now();
-            &result.0
-        })
+        self.get_mut(key).map(|v| &*v)
     }
 
     /// Returns a reference to the value with the given `key`, if present and not expired, without
@@ -249,10 +253,14 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        if self.expired(key) {
-            return None;
-        }
-        self.map.get(key).map(|&(ref value, _)| value)
+        self.map
+            .get(key)
+            .into_iter()
+            .find(|&(_, t)| {
+                self.time_to_live
+                    .map_or(true, |ttl| *t + ttl >= Instant::now())
+            })
+            .map(|&(ref value, _)| value)
     }
 
     /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
@@ -263,8 +271,8 @@ where
         Q: Ord,
     {
         self.remove_expired();
-        let list = &mut self.list;
 
+        let list = &mut self.list;
         self.map.get_mut(key).map(|result| {
             Self::update_key(list, key);
             result.1 = Instant::now();
@@ -278,17 +286,32 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        self.map.contains_key(key) && !self.expired(key)
+        self.peek(key).is_some()
     }
 
     /// Returns the size of the cache, i.e. the number of cached non-expired key-value pairs.
     pub fn len(&self) -> usize {
-        self.map.len() - self.list.iter().take_while(|key| self.expired(key)).count()
+        // FIXME: we assume most items are not expired => it is faster to count the expired ones.
+        //
+        // If this assumption is not valid, then directly iterating through all the
+        // map items and counting the not expired ones would be faster (no map lookups)
+        self.time_to_live.map_or(self.list.len(), |ttl| {
+            self.list
+                .iter()
+                .filter_map(|key| self.map.get(key))
+                .position(|&(_, t)| t + ttl >= Instant::now())
+                .map_or(0, |p| self.map.len() - p)
+        })
     }
 
     /// Returns `true` if there are no non-expired entries in the cache.
     pub fn is_empty(&self) -> bool {
-        self.list.iter().all(|key| self.expired(key))
+        self.time_to_live.map_or(self.list.is_empty(), |ttl| {
+            self.list
+                .back()
+                .and_then(|key| self.map.get(key))
+                .map_or(true, |&(_, t)| t + ttl < Instant::now())
+        })
     }
 
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
@@ -313,12 +336,9 @@ where
     pub fn iter(&mut self) -> Iter<Key, Value> {
         self.remove_expired();
 
-        let has_expiry = self.has_expiry();
-
         Iter {
             map_iter_mut: self.map.iter_mut(),
             list: &mut self.list,
-            has_expiry,
             lru_cache_ttl: self.time_to_live,
         }
     }
@@ -327,36 +347,8 @@ where
     pub fn peek_iter(&self) -> PeekIter<Key, Value> {
         PeekIter {
             map_iter: self.map.iter(),
-            lru_cache: self,
+            lru_cache_ttl: self.time_to_live,
         }
-    }
-
-    fn has_expiry(&self) -> bool {
-        self.time_to_live != Duration::new(std::u64::MAX, 999_999_999)
-    }
-
-    fn expired<Q: ?Sized>(&self, key: &Q) -> bool
-    where
-        Key: Borrow<Q>,
-        Q: Ord,
-    {
-        let now = Instant::now();
-        self.has_expiry()
-            && self
-                .map
-                .get(key)
-                .map_or(false, |v| v.1 + self.time_to_live < now)
-    }
-
-    fn remove_oldest_element(&mut self) {
-        let _ = self
-            .list
-            .pop_front()
-            .map(|key| assert!(self.map.remove(&key).is_some()));
-    }
-
-    fn check_time_expired(&self) -> bool {
-        self.has_expiry() && self.list.front().map_or(false, |key| self.expired(key))
     }
 
     // Move `key` in the ordered list to the last
@@ -366,14 +358,23 @@ where
         Q: Ord,
     {
         if let Some(pos) = list.iter().position(|k| k.borrow() == key) {
-            let k = list.remove(pos).unwrap();
-            list.push_back(k);
+            let _ = list.remove(pos).map(|it| list.push_back(it));
         }
     }
 
     fn remove_expired(&mut self) {
-        while self.check_time_expired() {
-            self.remove_oldest_element();
+        let (map, list) = (&mut self.map, &mut self.list);
+        if let Some((i, val)) = self.time_to_live.and_then(|ttl| {
+            list.iter()
+                .enumerate()
+                .filter_map(|(i, key)| map.remove(key).map(|val| (i, val)))
+                .find(|&(_, (_, t))| t + ttl >= Instant::now())
+        }) {
+            // we have found one item not expired, we must insert it back
+            let _ = map.insert(list[i].clone(), val);
+            let _ = list.drain(..i);
+        } else if map.is_empty() {
+            list.clear();
         }
     }
 }
