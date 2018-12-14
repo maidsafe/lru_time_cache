@@ -56,8 +56,6 @@
     non_shorthand_field_patterns,
     overflowing_literals,
     plugin_as_library,
-    private_no_mangle_fns,
-    private_no_mangle_statics,
     stable_features,
     unconditional_recursion,
     unknown_lints,
@@ -114,7 +112,7 @@ pub struct VacantEntry<'a, Key: 'a, Value: 'a> {
 }
 
 /// An occupied Entry.
-pub struct OccupiedEntry<'a, Value: 'a> {
+pub struct OccupiedEntry<'a, Value> {
     value: &'a mut Value,
 }
 
@@ -339,7 +337,7 @@ where
     }
 
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
-    pub fn entry(&mut self, key: Key) -> Entry<Key, Value> {
+    pub fn entry(&mut self, key: Key) -> Entry<'_, Key, Value> {
         // We need to do it the ugly way below due to this issue:
         // https://github.com/rust-lang/rfcs/issues/811
         // match self.get_mut(&key) {
@@ -357,7 +355,7 @@ where
 
     /// Returns an iterator over all entries that updates the timestamps as values are
     /// traversed. Also removes expired elements before creating the iterator.
-    pub fn iter(&mut self) -> Iter<Key, Value> {
+    pub fn iter(&mut self) -> Iter<'_, Key, Value> {
         self.remove_expired();
 
         Iter {
@@ -368,7 +366,7 @@ where
     }
 
     /// Returns an iterator over all entries that does not modify the timestamps.
-    pub fn peek_iter(&self) -> PeekIter<Key, Value> {
+    pub fn peek_iter(&self) -> PeekIter<'_, Key, Value> {
         PeekIter {
             map_iter: self.map.iter(),
             lru_cache_ttl: self.time_to_live,
