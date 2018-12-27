@@ -7,7 +7,7 @@ os:
   - osx
 language: rust
 rust:
-  - 1.31.1
+  - stable
 sudo: false
 branches:
   only:
