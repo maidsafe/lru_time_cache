@@ -83,8 +83,6 @@
     variant_size_differences
 )]
 
-#[cfg(feature = "fake_clock")]
-extern crate fake_clock;
 #[cfg(test)]
 extern crate rand;
 
