@@ -37,7 +37,7 @@
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/maidsafe/QA/master/Images/maidsafe_logo.png",
     html_favicon_url = "https://maidsafe.net/img/favicon.ico",
-    test(attr(forbid(warnings))),
+    test(attr(forbid(warnings)))
 )]
 // For explanation of lint checks, run `rustc -W help` or see
 // https://github.com/maidsafe/QA/blob/master/Documentation/Rust%20Lint%20Checks.md
@@ -56,8 +56,6 @@
     non_shorthand_field_patterns,
     overflowing_literals,
     plugin_as_library,
-    private_no_mangle_fns,
-    private_no_mangle_statics,
     stable_features,
     unconditional_recursion,
     unknown_lints,
@@ -227,7 +225,7 @@ where
         } else {
             self.remove_expired();
             if self.map.len() >= self.capacity {
-                for key in self.list.drain(..self.map.len() - self.capacity + 1) {
+                for key in self.list.drain(..=self.map.len() - self.capacity) {
                     assert!(self.map.remove(&key).is_some());
                 }
             }
@@ -284,7 +282,8 @@ where
             .find(|&(_, t)| {
                 self.time_to_live
                     .map_or(true, |ttl| *t + ttl >= Instant::now())
-            }).map(|&(ref value, _)| value)
+            })
+            .map(|&(ref value, _)| value)
     }
 
     /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
