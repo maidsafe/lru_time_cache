@@ -663,6 +663,19 @@ mod test {
             assert_eq!(*lru_cache.list.front().unwrap(), 2);
             assert_eq!(*lru_cache.list.back().unwrap(), 1);
         }
+
+        #[test]
+        fn it_yields_items_ordered_by_key() {
+            let mut lru_cache = LruCache::<usize, usize>::with_capacity(4);
+            let _ = lru_cache.insert(2, 2);
+            let _ = lru_cache.insert(0, 0);
+            let _ = lru_cache.insert(3, 3);
+            let _ = lru_cache.insert(1, 1);
+
+            let cached = lru_cache.iter().collect::<Vec<_>>();
+
+            assert_eq!(cached, vec![(&0, &0), (&1, &1), (&2, &2), (&3, &3)]);
+        }
     }
 
     #[test]
