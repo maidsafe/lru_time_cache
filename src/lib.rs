@@ -115,10 +115,40 @@ pub struct OccupiedEntry<'a, Value: 'a> {
 }
 
 /// An iterator over an `LruCache`'s entries that updates the timestamps as values are traversed.
+/// Values are produced in the most recently used order.
 pub struct Iter<'a, Key: 'a, Value: 'a> {
-    map_iter_mut: btree_map::IterMut<'a, Key, (Value, Instant)>,
+    /// Reference to the iterated cache.
+    map: &'a mut BTreeMap<Key, (Value, Instant)>,
+    /// Ordered cache entry keys where the least recently used items are first.
     list: &'a mut VecDeque<Key>,
     lru_cache_ttl: Option<Duration>,
+    /// Index in `list` of the previously used item.
+    item_index: usize,
+}
+
+impl<'a, Key, Value> Iter<'a, Key, Value>
+where
+    Key: Ord,
+{
+    /// Returns next unexpired item in the cache or `None` if no such items.
+    /// Expired items are removed from the cache.
+    fn next_unexpired(&mut self, now: Instant) -> Option<Key> {
+        loop {
+            self.item_index = self.item_index.checked_sub(1)?;
+            let key = self.list.remove(self.item_index)?;
+            let value = self.map.get(&key)?;
+
+            if let Some(ttl) = self.lru_cache_ttl {
+                if value.1 + ttl > now {
+                    return Some(key);
+                } else {
+                    let _ = self.map.remove(&key);
+                }
+            } else {
+                return Some(key);
+            }
+        }
+    }
 }
 
 impl<'a, Key, Value> Iterator for Iter<'a, Key, Value>
@@ -127,20 +157,22 @@ where
 {
     type Item = (&'a Key, &'a Value);
 
+    /// Returns the next element in the cache and moves it to the top of the cache.
+    /// The most recently used items are yield first.
+    #[allow(unsafe_code)]
     fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
         let now = Instant::now();
-        let not_expired = match self.lru_cache_ttl {
-            Some(ttl) => self
-                .map_iter_mut
-                .find(|&(_, &mut (_, instant))| instant + ttl > now),
-            None => self.map_iter_mut.next(),
-        };
+        let key = self.next_unexpired(now)?;
+        self.list.push_back(key);
+        let key = self.list.back()?;
+        let mut value = self.map.get_mut(&key)?;
+        value.1 = now;
 
-        not_expired.map(|(key, &mut (ref value, ref mut instant))| {
-            LruCache::<Key, Value>::update_key(self.list, key);
-            *instant = now;
-            (key, value)
-        })
+        unsafe {
+            let key = std::mem::transmute::<&Key, &'a Key>(key);
+            let value = std::mem::transmute::<&Value, &'a Value>(&value.0);
+            Some((key, value))
+        }
     }
 }
 
@@ -354,11 +386,13 @@ where
 
     /// Returns an iterator over all entries that updates the timestamps as values are
     /// traversed. Also removes expired elements before creating the iterator.
+    /// Values are produced in the most recently used order.
     pub fn iter(&mut self) -> Iter<Key, Value> {
         self.remove_expired();
 
         Iter {
-            map_iter_mut: self.map.iter_mut(),
+            item_index: self.list.len(),
+            map: &mut self.map,
             list: &mut self.list,
             lru_cache_ttl: self.time_to_live,
         }
@@ -619,15 +653,12 @@ mod test {
         use super::*;
 
         #[test]
-        fn it_yields_all_inserted_elements() {
+        fn it_returns_none_when_cache_is_empty() {
             let mut lru_cache = LruCache::<usize, usize>::with_capacity(3);
-            let _ = lru_cache.insert(0, 0);
-            let _ = lru_cache.insert(1, 1);
-            let _ = lru_cache.insert(2, 2);
 
-            let cached = lru_cache.iter().collect::<Vec<_>>();
+            let next = lru_cache.iter().next();
 
-            assert_eq!(cached, vec![(&0, &0), (&1, &1), (&2, &2)]);
+            assert!(next.is_none());
         }
 
         #[test]
@@ -647,8 +678,8 @@ mod test {
             // only the first two entries should have their timestamp updated (and position in list)
             let _ = lru_cache.iter().take(2).all(|_| true);
 
-            assert_ne!(lru_cache.map[&0].1, initial_instant0);
-            assert_eq!(lru_cache.map[&2].1, initial_instant2);
+            assert_ne!(lru_cache.map[&2].1, initial_instant2);
+            assert_eq!(lru_cache.map[&0].1, initial_instant0);
         }
 
         #[test]
@@ -660,12 +691,12 @@ mod test {
 
             let _ = lru_cache.iter().take(2).all(|_| true);
 
-            assert_eq!(*lru_cache.list.front().unwrap(), 2);
+            assert_eq!(*lru_cache.list.front().unwrap(), 0);
             assert_eq!(*lru_cache.list.back().unwrap(), 1);
         }
 
         #[test]
-        fn it_yields_items_ordered_by_key() {
+        fn it_yields_the_most_recent_items_first() {
             let mut lru_cache = LruCache::<usize, usize>::with_capacity(4);
             let _ = lru_cache.insert(2, 2);
             let _ = lru_cache.insert(0, 0);
@@ -674,7 +705,23 @@ mod test {
 
             let cached = lru_cache.iter().collect::<Vec<_>>();
 
-            assert_eq!(cached, vec![(&0, &0), (&1, &1), (&2, &2), (&3, &3)]);
+            assert_eq!(cached, vec![(&1, &1), (&3, &3), (&0, &0), (&2, &2)]);
+        }
+
+        #[test]
+        fn it_removes_expired_items() {
+            let mut lru_cache =
+                LruCache::<usize, usize>::with_expiry_duration(Duration::from_millis(3));
+            let _ = lru_cache.insert(0, 0);
+            sleep(1);
+            let _ = lru_cache.insert(1, 1);
+            sleep(4);
+            let _ = lru_cache.insert(2, 2);
+
+            let items: Vec<_> = lru_cache.iter().collect();
+
+            assert_eq!(items.len(), 1);
+            assert_eq!(items[0], (&2, &2));
         }
     }
 
