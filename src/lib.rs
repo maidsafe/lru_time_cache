@@ -249,22 +249,32 @@ where
     ///
     /// If the key already existed in the cache, the existing value is returned and overwritten in
     /// the cache.  Otherwise, the key-value pair is inserted and `None` is returned.
-    pub fn insert(&mut self, key: Key, value: Value) -> Option<Value> {
-        if self.map.contains_key(&key) {
+    /// Evicts and returns expired entries.
+    pub fn notify_insert(&mut self, key: Key, value: Value) -> (Option<Value>, Vec<(Key, Value)>) {
+        let expired = if self.map.contains_key(&key) {
             Self::update_key(&mut self.list, &key);
+            Vec::new()
         } else {
-            self.remove_expired();
-            if self.map.len() >= self.capacity {
-                for key in self.list.drain(..=self.map.len() - self.capacity) {
-                    assert!(self.map.remove(&key).is_some());
-                }
-            }
+            let expired = self.remove_expired();
+            self.remove_lru();
             self.list.push_back(key.clone());
-        }
+            expired
+        };
 
-        self.map
-            .insert(key, (value, Instant::now()))
-            .map(|pair| pair.0)
+        (
+            self.map
+                .insert(key, (value, Instant::now()))
+                .map(|pair| pair.0),
+            expired,
+        )
+    }
+
+    /// Inserts a key-value pair into the cache.
+    ///
+    /// If the key already existed in the cache, the existing value is returned and overwritten in
+    /// the cache.  Otherwise, the key-value pair is inserted and `None` is returned.
+    pub fn insert(&mut self, key: Key, value: Value) -> Option<Value> {
+        self.notify_insert(key, value).0
     }
 
     /// Removes a key-value pair from the cache.
@@ -317,20 +327,33 @@ where
     }
 
     /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
+    /// exist. Also removes expired elements and updates the time.
+    pub fn notify_get_mut<Q: ?Sized>(&mut self, key: &Q) -> (Option<&mut Value>, Vec<(Key, Value)>)
+    where
+        Key: Borrow<Q>,
+        Q: Ord,
+    {
+        let expired = self.remove_expired();
+
+        let list = &mut self.list;
+        (
+            self.map.get_mut(key).map(|result| {
+                Self::update_key(list, key);
+                result.1 = Instant::now();
+                &mut result.0
+            }),
+            expired,
+        )
+    }
+
+    /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
     /// exist.  Also removes expired elements and updates the time.
     pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut Value>
     where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        self.remove_expired();
-
-        let list = &mut self.list;
-        self.map.get_mut(key).map(|result| {
-            Self::update_key(list, key);
-            result.1 = Instant::now();
-            &mut result.0
-        })
+        self.notify_get_mut(key).0
     }
 
     /// Returns whether `key` exists in the cache or not.
@@ -387,15 +410,27 @@ where
     /// Returns an iterator over all entries that updates the timestamps as values are
     /// traversed. Also removes expired elements before creating the iterator.
     /// Values are produced in the most recently used order.
-    pub fn iter(&mut self) -> Iter<Key, Value> {
-        self.remove_expired();
+    ///
+    /// Also, evicts and returns expired entries.
+    pub fn notify_iter(&mut self) -> (Iter<Key, Value>, Vec<(Key, Value)>) {
+        let expired = self.remove_expired();
 
-        Iter {
-            item_index: self.list.len(),
-            map: &mut self.map,
-            list: &mut self.list,
-            lru_cache_ttl: self.time_to_live,
-        }
+        (
+            Iter {
+                item_index: self.list.len(),
+                map: &mut self.map,
+                list: &mut self.list,
+                lru_cache_ttl: self.time_to_live,
+            },
+            expired,
+        )
+    }
+
+    /// Returns an iterator over all entries that updates the timestamps as values are
+    /// traversed. Also removes expired elements before creating the iterator.
+    /// Values are produced in the most recently used order.
+    pub fn iter(&mut self) -> Iter<Key, Value> {
+        self.notify_iter().0
     }
 
     /// Returns an iterator over all entries that does not modify the timestamps.
@@ -417,19 +452,38 @@ where
         }
     }
 
-    fn remove_expired(&mut self) {
+    /// If expiry timeout is set, removes expired items from the cache and returns them.
+    fn remove_expired(&mut self) -> Vec<(Key, Value)> {
         let (map, list) = (&mut self.map, &mut self.list);
-        if let Some((i, val)) = self.time_to_live.and_then(|ttl| {
-            list.iter()
-                .enumerate()
-                .filter_map(|(i, key)| map.remove(key).map(|val| (i, val)))
-                .find(|&(_, (_, t))| t + ttl >= Instant::now())
-        }) {
-            // we have found one item not expired, we must insert it back
-            let _ = map.insert(list[i].clone(), val);
-            let _ = list.drain(..i);
+
+        if let Some(ttl) = self.time_to_live {
+            let mut expired_values = Vec::new();
+            for key in list.iter() {
+                if map[key].1 + ttl >= Instant::now() {
+                    break;
+                }
+                if let Some(entry) = map.remove(key) {
+                    expired_values.push(entry.0);
+                }
+            }
+            // remove keys as well
+            return list
+                .drain(..expired_values.len())
+                .zip(expired_values)
+                .collect();
         } else if map.is_empty() {
             list.clear();
+        }
+
+        Vec::new()
+    }
+
+    /// Removes least recently used items to make space for new ones.
+    fn remove_lru(&mut self) {
+        if self.map.len() >= self.capacity {
+            for key in self.list.drain(..=self.map.len() - self.capacity) {
+                assert!(self.map.remove(&key).is_some());
+            }
         }
     }
 }
@@ -649,6 +703,39 @@ mod test {
         assert_eq!(lru_cache.len(), 1);
     }
 
+    mod notify_insert {
+        use super::*;
+
+        #[test]
+        fn it_removes_expired_entries() {
+            let ttl = Duration::from_millis(200);
+            let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(ttl);
+            let _ = lru_cache.insert(1, 1);
+            let _ = lru_cache.insert(2, 2);
+            sleep(250);
+
+            let _ = lru_cache.notify_insert(3, 3);
+
+            assert_eq!(lru_cache.map.len(), 1);
+            assert_eq!(lru_cache.map[&3].0, 3);
+        }
+
+        #[test]
+        fn it_returns_removed_expired_entries() {
+            let ttl = Duration::from_millis(200);
+            let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(ttl);
+            let _ = lru_cache.insert(1, 1);
+            let _ = lru_cache.insert(2, 2);
+            sleep(250);
+
+            let (_replaced, expired) = lru_cache.notify_insert(3, 3);
+
+            assert_eq!(expired.len(), 2);
+            assert_eq!(expired[0], (1, 1));
+            assert_eq!(expired[1], (2, 2));
+        }
+    }
+
     mod iter {
         use super::*;
 
@@ -779,5 +866,62 @@ mod test {
         assert_eq!(Some(&mut 0), lru_cache.get_mut("foo"));
         assert_eq!(Some(&0), lru_cache.peek("foo"));
         assert_eq!(Some(0), lru_cache.remove("foo"));
+    }
+
+    mod remove_expired {
+        use super::*;
+
+        #[test]
+        fn it_removes_expired_entries_from_the_map() {
+            let ttl = Duration::from_millis(200);
+            let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(ttl);
+            let _ = lru_cache.insert(1, 1);
+            let _ = lru_cache.insert(2, 2);
+            sleep(150);
+            let _ = lru_cache.insert(3, 3);
+            let _ = lru_cache.insert(4, 4);
+            sleep(60);
+
+            let _ = lru_cache.remove_expired();
+
+            assert_eq!(lru_cache.map.len(), 2);
+            assert_eq!(lru_cache.map[&3].0, 3);
+            assert_eq!(lru_cache.map[&4].0, 4);
+        }
+
+        #[test]
+        fn it_removes_expired_entries_from_the_list() {
+            let ttl = Duration::from_millis(200);
+            let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(ttl);
+            let _ = lru_cache.insert(1, 1);
+            let _ = lru_cache.insert(2, 2);
+            sleep(150);
+            let _ = lru_cache.insert(3, 3);
+            let _ = lru_cache.insert(4, 4);
+            sleep(60);
+
+            let _ = lru_cache.remove_expired();
+
+            assert_eq!(lru_cache.list.len(), 2);
+            assert_eq!(lru_cache.list[0], 3);
+            assert_eq!(lru_cache.list[1], 4);
+        }
+
+        #[test]
+        fn it_returns_expired_entries() {
+            let ttl = Duration::from_millis(200);
+            let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(ttl);
+            let _ = lru_cache.insert(1, 1);
+            let _ = lru_cache.insert(2, 2);
+            sleep(150);
+            let _ = lru_cache.insert(3, 3);
+            sleep(60);
+
+            let expired = lru_cache.remove_expired();
+
+            assert_eq!(expired.len(), 2);
+            assert_eq!(expired[0], (1, 1));
+            assert_eq!(expired[1], (2, 2));
+        }
     }
 }
