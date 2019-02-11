@@ -176,6 +176,58 @@ where
     }
 }
 
+/// Entry produced by `NotifyIter` that might be still valid or expired.
+pub enum TimedEntry<'a, Key: 'a, Value: 'a> {
+    /// Entry has not yet expired.
+    Valid(&'a Key, &'a Value),
+    /// Entry got expired and was evicted from the cache.
+    Expired(Key, Value),
+}
+
+/// Much like `Iter` except will produce expired entries too where `Iter` silently drops them.
+pub struct NotifyIter<'a, Key: 'a, Value: 'a> {
+    /// Reference to the iterated cache.
+    map: &'a mut BTreeMap<Key, (Value, Instant)>,
+    /// Ordered cache entry keys where the least recently used items are first.
+    list: &'a mut VecDeque<Key>,
+    lru_cache_ttl: Option<Duration>,
+    /// Index in `list` of the previously used item.
+    item_index: usize,
+}
+
+impl<'a, Key, Value> Iterator for NotifyIter<'a, Key, Value>
+where
+    Key: Ord + Clone,
+{
+    type Item = TimedEntry<'a, Key, Value>;
+
+    /// Returns the next element in the cache and moves it to the top of the cache.
+    /// The most recently used items are yield first.
+    #[allow(unsafe_code)]
+    fn next(&mut self) -> Option<Self::Item> {
+        self.item_index = self.item_index.checked_sub(1)?;
+        let key = self.list.remove(self.item_index)?;
+        let mut value = self.map.get_mut(&key)?;
+        let now = Instant::now();
+
+        if let Some(ttl) = self.lru_cache_ttl {
+            if value.1 + ttl <= now {
+                let value = self.map.remove(&key)?;
+                return Some(TimedEntry::Expired(key, value.0));
+            }
+        }
+
+        self.list.push_back(key);
+        let key = self.list.back()?;
+        value.1 = now;
+        unsafe {
+            let key = std::mem::transmute::<&Key, &'a Key>(key);
+            let value = std::mem::transmute::<&Value, &'a Value>(&value.0);
+            Some(TimedEntry::Valid(key, value))
+        }
+    }
+}
+
 /// An iterator over an `LruCache`'s entries that does not modify the timestamp.
 pub struct PeekIter<'a, Key: 'a, Value: 'a> {
     map_iter: btree_map::Iter<'a, Key, (Value, Instant)>,
@@ -412,25 +464,27 @@ where
     /// Values are produced in the most recently used order.
     ///
     /// Also, evicts and returns expired entries.
-    pub fn notify_iter(&mut self) -> (Iter<Key, Value>, Vec<(Key, Value)>) {
-        let expired = self.remove_expired();
-
-        (
-            Iter {
-                item_index: self.list.len(),
-                map: &mut self.map,
-                list: &mut self.list,
-                lru_cache_ttl: self.time_to_live,
-            },
-            expired,
-        )
+    pub fn notify_iter(&mut self) -> NotifyIter<Key, Value> {
+        NotifyIter {
+            item_index: self.list.len(),
+            map: &mut self.map,
+            list: &mut self.list,
+            lru_cache_ttl: self.time_to_live,
+        }
     }
 
     /// Returns an iterator over all entries that updates the timestamps as values are
     /// traversed. Also removes expired elements before creating the iterator.
     /// Values are produced in the most recently used order.
     pub fn iter(&mut self) -> Iter<Key, Value> {
-        self.notify_iter().0
+        let _ = self.remove_expired();
+
+        Iter {
+            item_index: self.list.len(),
+            map: &mut self.map,
+            list: &mut self.list,
+            lru_cache_ttl: self.time_to_live,
+        }
     }
 
     /// Returns an iterator over all entries that does not modify the timestamps.
@@ -809,6 +863,86 @@ mod test {
 
             assert_eq!(items.len(), 1);
             assert_eq!(items[0], (&2, &2));
+        }
+    }
+
+    mod notify_iter {
+        use super::*;
+
+        #[test]
+        fn it_returns_none_when_cache_is_empty() {
+            let mut lru_cache = LruCache::<usize, usize>::with_capacity(3);
+
+            let next = lru_cache.notify_iter().next();
+
+            assert!(next.is_none());
+        }
+
+        #[test]
+        fn it_yields_the_most_recent_items_first() {
+            let mut lru_cache = LruCache::<usize, usize>::with_capacity(4);
+            let _ = lru_cache.insert(2, 2);
+            let _ = lru_cache.insert(0, 0);
+            let _ = lru_cache.insert(3, 3);
+            let _ = lru_cache.insert(1, 1);
+
+            let cached = lru_cache
+                .notify_iter()
+                .map(|entry| match entry {
+                    TimedEntry::Valid(key, value) => (key, value),
+                    _ => panic!("Unexpected expired entry"),
+                })
+                .collect::<Vec<_>>();
+
+            assert_eq!(cached, vec![(&1, &1), (&3, &3), (&0, &0), (&2, &2)]);
+        }
+
+        #[test]
+        fn it_produces_expired_and_valid_entries() {
+            let mut lru_cache =
+                LruCache::<usize, usize>::with_expiry_duration(Duration::from_millis(300));
+            let _ = lru_cache.insert(0, 0);
+            let _ = lru_cache.insert(1, 1);
+            sleep(250);
+            let _ = lru_cache.insert(2, 2);
+            sleep(60);
+
+            let expired: Vec<_> = lru_cache
+                .notify_iter()
+                .filter_map(|entry| match entry {
+                    TimedEntry::Expired(key, value) => Some((key, value)),
+                    _ => None,
+                })
+                .collect();
+            let valid: Vec<_> = lru_cache
+                .notify_iter()
+                .filter_map(|entry| match entry {
+                    TimedEntry::Valid(key, value) => Some((key, value)),
+                    _ => None,
+                })
+                .collect();
+
+            assert_eq!(valid.len(), 1);
+            assert_eq!(valid[0], (&2, &2));
+            assert_eq!(expired.len(), 2);
+            assert_eq!(expired[0], (1, 1));
+            assert_eq!(expired[1], (0, 0));
+        }
+
+        #[test]
+        fn it_removes_expired_items() {
+            let mut lru_cache =
+                LruCache::<usize, usize>::with_expiry_duration(Duration::from_millis(300));
+            let _ = lru_cache.insert(0, 0);
+            let _ = lru_cache.insert(1, 1);
+            sleep(250);
+            let _ = lru_cache.insert(2, 2);
+            sleep(60);
+
+            let _items: Vec<_> = lru_cache.notify_iter().collect();
+
+            assert!(lru_cache.get(&0).is_none());
+            assert!(lru_cache.get(&1).is_none());
         }
     }
 
