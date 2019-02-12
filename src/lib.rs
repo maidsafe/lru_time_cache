@@ -101,7 +101,7 @@ pub enum Entry<'a, Key: 'a, Value: 'a> {
 }
 
 /// A vacant Entry.
-pub struct VacantEntry<'a, Key: 'a, Value: 'a> {
+pub struct VacantEntry<'a, Key, Value> {
     key: Key,
     cache: &'a mut LruCache<Key, Value>,
 }
@@ -113,7 +113,7 @@ pub struct OccupiedEntry<'a, Value> {
 
 /// An iterator over an `LruCache`'s entries that updates the timestamps as values are traversed.
 /// Values are produced in the most recently used order.
-pub struct Iter<'a, Key: 'a, Value: 'a> {
+pub struct Iter<'a, Key, Value> {
     /// Reference to the iterated cache.
     map: &'a mut BTreeMap<Key, (Value, Instant)>,
     /// Ordered cache entry keys where the least recently used items are first.
@@ -182,7 +182,7 @@ pub enum TimedEntry<'a, Key: 'a, Value: 'a> {
 }
 
 /// Much like `Iter` except will produce expired entries too where `Iter` silently drops them.
-pub struct NotifyIter<'a, Key: 'a, Value: 'a> {
+pub struct NotifyIter<'a, Key, Value> {
     /// Reference to the iterated cache.
     map: &'a mut BTreeMap<Key, (Value, Instant)>,
     /// Ordered cache entry keys where the least recently used items are first.
@@ -226,7 +226,7 @@ where
 }
 
 /// An iterator over an `LruCache`'s entries that does not modify the timestamp.
-pub struct PeekIter<'a, Key: 'a, Value: 'a> {
+pub struct PeekIter<'a, Key, Value> {
     map_iter: btree_map::Iter<'a, Key, (Value, Instant)>,
     lru_cache_ttl: Option<Duration>,
 }
@@ -470,7 +470,7 @@ where
     /// Values are produced in the most recently used order.
     ///
     /// Also, evicts and returns expired entries.
-    pub fn notify_iter(&mut self) -> NotifyIter<Key, Value> {
+    pub fn notify_iter(&mut self) -> NotifyIter<'_, Key, Value> {
         NotifyIter {
             item_index: self.list.len(),
             map: &mut self.map,
@@ -482,7 +482,7 @@ where
     /// Returns an iterator over all entries that updates the timestamps as values are
     /// traversed. Also removes expired elements before creating the iterator.
     /// Values are produced in the most recently used order.
-    pub fn iter(&mut self) -> Iter<Key, Value> {
+    pub fn iter(&mut self) -> Iter<'_, Key, Value> {
         let _ = self.remove_expired();
 
         Iter {
@@ -601,7 +601,8 @@ impl<'a, Key: Ord + Clone, Value> Entry<'a, Key, Value> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use rand;
+    use rand::distributions::{Distribution, Standard};
+    use rand::thread_rng;
     use std::time::Duration;
 
     #[cfg(feature = "fake_clock")]
