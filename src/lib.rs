@@ -83,9 +83,6 @@
     variant_size_differences
 )]
 
-#[cfg(test)]
-extern crate rand;
-
 #[cfg(feature = "fake_clock")]
 use fake_clock::FakeClock as Instant;
 use std::borrow::Borrow;
@@ -452,7 +449,8 @@ impl<'a, Key: Ord + Clone, Value> Entry<'a, Key, Value> {
 
 #[cfg(test)]
 mod test {
-    use rand;
+    use rand::distributions::{Distribution, Standard};
+    use rand::thread_rng;
     use std::time::Duration;
 
     #[cfg(feature = "fake_clock")]
@@ -469,13 +467,11 @@ mod test {
 
     fn generate_random_vec<T>(len: usize) -> Vec<T>
     where
-        T: rand::Rand,
+        Standard: Distribution<T>,
     {
-        let mut vec = Vec::<T>::with_capacity(len);
-        for _ in 0..len {
-            vec.push(rand::random());
-        }
-        vec
+        let mut rng = thread_rng();
+        let v: Vec<T> = Standard.sample_iter(&mut rng).take(len).collect();
+        v
     }
 
     #[test]
