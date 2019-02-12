@@ -303,14 +303,13 @@ where
     /// the cache.  Otherwise, the key-value pair is inserted and `None` is returned.
     /// Evicts and returns expired entries.
     pub fn notify_insert(&mut self, key: Key, value: Value) -> (Option<Value>, Vec<(Key, Value)>) {
-        let expired = if self.map.contains_key(&key) {
+        let expired = self.remove_expired();
+
+        if self.map.contains_key(&key) {
             Self::update_key(&mut self.list, &key);
-            Vec::new()
         } else {
-            let expired = self.remove_expired();
             self.remove_lru();
             self.list.push_back(key.clone());
-            expired
         };
 
         (
