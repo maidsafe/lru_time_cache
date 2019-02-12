@@ -1,5 +1,10 @@
 # Lru Time Cache - Change Log
 
+## [Unreleased]
+
+- Update `LruCache::iter()` order - most recently used items will be produced
+  first.
+
 ## [0.8.1]
 - Update to dual license (MIT/BSD)
 
