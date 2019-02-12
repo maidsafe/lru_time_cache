@@ -350,6 +350,16 @@ where
         self.list.clear();
     }
 
+    /// Much like `get()`, except in addition returns expired entries.
+    pub fn notify_get<Q: ?Sized>(&mut self, key: &Q) -> (Option<&Value>, Vec<(Key, Value)>)
+    where
+        Key: Borrow<Q>,
+        Q: Ord,
+    {
+        let (value, expired) = self.notify_get_mut(key);
+        (value.map(|v| &*v), expired)
+    }
+
     /// Retrieves a reference to the value stored under `key`, or `None` if the key doesn't exist.
     /// Also removes expired elements and updates the time.
     pub fn get<Q: ?Sized>(&mut self, key: &Q) -> Option<&Value>
