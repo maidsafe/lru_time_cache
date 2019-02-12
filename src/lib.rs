@@ -83,9 +83,6 @@
     variant_size_differences
 )]
 
-#[cfg(test)]
-extern crate rand;
-
 #[cfg(feature = "fake_clock")]
 use fake_clock::FakeClock as Instant;
 use std::borrow::Borrow;
@@ -104,19 +101,19 @@ pub enum Entry<'a, Key: 'a, Value: 'a> {
 }
 
 /// A vacant Entry.
-pub struct VacantEntry<'a, Key: 'a, Value: 'a> {
+pub struct VacantEntry<'a, Key, Value> {
     key: Key,
     cache: &'a mut LruCache<Key, Value>,
 }
 
 /// An occupied Entry.
-pub struct OccupiedEntry<'a, Value: 'a> {
+pub struct OccupiedEntry<'a, Value> {
     value: &'a mut Value,
 }
 
 /// An iterator over an `LruCache`'s entries that updates the timestamps as values are traversed.
 /// Values are produced in the most recently used order.
-pub struct Iter<'a, Key: 'a, Value: 'a> {
+pub struct Iter<'a, Key, Value> {
     /// Reference to the iterated cache.
     map: &'a mut BTreeMap<Key, (Value, Instant)>,
     /// Ordered cache entry keys where the least recently used items are first.
@@ -185,7 +182,7 @@ pub enum TimedEntry<'a, Key: 'a, Value: 'a> {
 }
 
 /// Much like `Iter` except will produce expired entries too where `Iter` silently drops them.
-pub struct NotifyIter<'a, Key: 'a, Value: 'a> {
+pub struct NotifyIter<'a, Key, Value> {
     /// Reference to the iterated cache.
     map: &'a mut BTreeMap<Key, (Value, Instant)>,
     /// Ordered cache entry keys where the least recently used items are first.
@@ -229,7 +226,7 @@ where
 }
 
 /// An iterator over an `LruCache`'s entries that does not modify the timestamp.
-pub struct PeekIter<'a, Key: 'a, Value: 'a> {
+pub struct PeekIter<'a, Key, Value> {
     map_iter: btree_map::Iter<'a, Key, (Value, Instant)>,
     lru_cache_ttl: Option<Duration>,
 }
@@ -452,7 +449,7 @@ where
     }
 
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
-    pub fn entry(&mut self, key: Key) -> Entry<Key, Value> {
+    pub fn entry(&mut self, key: Key) -> Entry<'_, Key, Value> {
         // We need to do it the ugly way below due to this issue:
         // https://github.com/rust-lang/rfcs/issues/811
         // match self.get_mut(&key) {
@@ -473,7 +470,7 @@ where
     /// Values are produced in the most recently used order.
     ///
     /// Also, evicts and returns expired entries.
-    pub fn notify_iter(&mut self) -> NotifyIter<Key, Value> {
+    pub fn notify_iter(&mut self) -> NotifyIter<'_, Key, Value> {
         NotifyIter {
             item_index: self.list.len(),
             map: &mut self.map,
@@ -485,7 +482,7 @@ where
     /// Returns an iterator over all entries that updates the timestamps as values are
     /// traversed. Also removes expired elements before creating the iterator.
     /// Values are produced in the most recently used order.
-    pub fn iter(&mut self) -> Iter<Key, Value> {
+    pub fn iter(&mut self) -> Iter<'_, Key, Value> {
         let _ = self.remove_expired();
 
         Iter {
@@ -497,7 +494,7 @@ where
     }
 
     /// Returns an iterator over all entries that does not modify the timestamps.
-    pub fn peek_iter(&self) -> PeekIter<Key, Value> {
+    pub fn peek_iter(&self) -> PeekIter<'_, Key, Value> {
         PeekIter {
             map_iter: self.map.iter(),
             lru_cache_ttl: self.time_to_live,
@@ -604,7 +601,8 @@ impl<'a, Key: Ord + Clone, Value> Entry<'a, Key, Value> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use rand;
+    use rand::distributions::{Distribution, Standard};
+    use rand::thread_rng;
     use std::time::Duration;
 
     #[cfg(feature = "fake_clock")]
@@ -621,13 +619,11 @@ mod test {
 
     fn generate_random_vec<T>(len: usize) -> Vec<T>
     where
-        T: rand::Rand,
+        Standard: Distribution<T>,
     {
-        let mut vec = Vec::<T>::with_capacity(len);
-        for _ in 0..len {
-            vec.push(rand::random());
-        }
-        vec
+        let mut rng = thread_rng();
+        let v: Vec<T> = Standard.sample_iter(&mut rng).take(len).collect();
+        v
     }
 
     #[test]
