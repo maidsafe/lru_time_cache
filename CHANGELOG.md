@@ -1,9 +1,11 @@
 # Lru Time Cache - Change Log
 
-## [Unreleased]
+## [0.9.0]
 
+- API to get expired or pushed out items from the LRU
 - Update `LruCache::iter()` order - most recently used items will be produced
   first.
+- Update `rand` dependency
 
 ## [0.8.1]
 - Update to dual license (MIT/BSD)
