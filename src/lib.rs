@@ -349,7 +349,7 @@ where
 
     /// Returns an iterator over all entries that does not modify the timestamps.
     pub fn peek_iter(&self) -> PeekIter<'_, Key, Value> {
-        PeekIter::new(self.map.iter(), self.time_to_live)
+        PeekIter::new(&self.map, &self.list, self.time_to_live)
     }
 
     // Move `key` in the ordered list to the last
@@ -806,7 +806,7 @@ mod test {
         use super::*;
 
         #[test]
-        fn it_yields_cached_entries() {
+        fn it_yields_cached_entries_in_most_recently_used_order() {
             let time_to_live = Duration::from_millis(500);
             let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
@@ -815,7 +815,7 @@ mod test {
             let _ = lru_cache.insert(3, 3);
 
             assert_eq!(
-                vec![(&1, &1), (&2, &2), (&3, &3)],
+                vec![(&3, &3), (&2, &2), (&1, &1)],
                 lru_cache.peek_iter().collect::<Vec<_>>()
             );
         }
