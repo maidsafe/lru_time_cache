@@ -802,32 +802,63 @@ mod test {
         }
     }
 
-    #[test]
-    fn peek_iter() {
-        let time_to_live = Duration::from_millis(500);
-        let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+    mod peek_iter {
+        use super::*;
 
-        let _ = lru_cache.insert(0, 0);
-        let _ = lru_cache.insert(2, 2);
-        let _ = lru_cache.insert(3, 3);
+        #[test]
+        fn it_yields_cached_entries() {
+            let time_to_live = Duration::from_millis(500);
+            let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
-        sleep(300);
-        assert_eq!(
-            vec![(&0, &0), (&2, &2), (&3, &3)],
-            lru_cache.peek_iter().collect::<Vec<_>>()
-        );
-        assert_eq!(Some(&2), lru_cache.get(&2));
-        let _ = lru_cache.insert(1, 1);
-        let _ = lru_cache.insert(4, 4);
+            let _ = lru_cache.insert(1, 1);
+            let _ = lru_cache.insert(2, 2);
+            let _ = lru_cache.insert(3, 3);
 
-        sleep(300);
-        assert_eq!(
-            vec![(&1, &1), (&2, &2), (&4, &4)],
-            lru_cache.peek_iter().collect::<Vec<_>>()
-        );
+            assert_eq!(
+                vec![(&1, &1), (&2, &2), (&3, &3)],
+                lru_cache.peek_iter().collect::<Vec<_>>()
+            );
+        }
 
-        sleep(300);
-        assert!(lru_cache.is_empty());
+        #[test]
+        fn it_yields_only_unexpired_entries() {
+            let time_to_live = Duration::from_millis(500);
+            let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+
+            let _ = lru_cache.insert(1, 1);
+            let _ = lru_cache.insert(2, 2);
+            sleep(300);
+            let _ = lru_cache.insert(3, 3);
+            sleep(300);
+
+            let entries = lru_cache.peek_iter().collect::<Vec<_>>();
+
+            assert_eq!(entries, vec![(&3, &3)]);
+        }
+
+        #[test]
+        fn it_doesnt_modify_entry_update_time() {
+            let time_to_live = Duration::from_millis(500);
+            let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+
+            let _ = lru_cache.insert(1, 1);
+            let expected_time = lru_cache
+                .map
+                .values()
+                .map(|(_, updated_at)| updated_at)
+                .nth(0)
+                .unwrap();
+
+            let _ = lru_cache.peek_iter().collect::<Vec<_>>();
+
+            let real_time = lru_cache
+                .map
+                .values()
+                .map(|(_, updated_at)| updated_at)
+                .nth(0)
+                .unwrap();
+            assert_eq!(real_time, expected_time);
+        }
     }
 
     #[test]
