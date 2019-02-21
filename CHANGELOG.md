@@ -1,5 +1,10 @@
 # Lru Time Cache - Change Log
 
+## [Unreleased]
+
+- Update `LruCache::peek_iter()` order - most recently used items will be
+  produced first.
+
 ## [0.9.0]
 
 - API to get expired or pushed out items from the LRU

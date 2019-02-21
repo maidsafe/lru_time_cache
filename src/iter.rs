@@ -11,7 +11,7 @@
 
 #[cfg(feature = "fake_clock")]
 use fake_clock::FakeClock as Instant;
-use std::collections::{btree_map, BTreeMap, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 use std::time::Duration;
 #[cfg(not(feature = "fake_clock"))]
 use std::time::Instant;
@@ -167,22 +167,47 @@ where
 
 /// An iterator over an `LruCache`'s entries that does not modify the timestamp.
 pub struct PeekIter<'a, Key, Value> {
-    map_iter: btree_map::Iter<'a, Key, (Value, Instant)>,
+    /// Reference to the iterated cache.
+    map: &'a BTreeMap<Key, (Value, Instant)>,
+    /// Ordered cache entry keys where the least recently used items are first.
+    list: &'a VecDeque<Key>,
     lru_cache_ttl: Option<Duration>,
+    /// Index in `list` of the previously used item.
+    item_index: usize,
 }
 
 impl<'a, Key, Value> PeekIter<'a, Key, Value>
 where
-    Key: Ord + Clone,
+    Key: Ord,
 {
     #[doc(hidden)]
     pub fn new(
-        map_iter: btree_map::Iter<'a, Key, (Value, Instant)>,
+        map: &'a BTreeMap<Key, (Value, Instant)>,
+        list: &'a VecDeque<Key>,
         lru_cache_ttl: Option<Duration>,
     ) -> Self {
+        let item_index = list.len();
         Self {
-            map_iter,
+            map,
+            list,
             lru_cache_ttl,
+            item_index,
+        }
+    }
+
+    /// Returns next unexpired item in the cache or `None` if no such items.
+    fn next_unexpired(&mut self, now: Instant) -> Option<()> {
+        loop {
+            self.item_index = self.item_index.checked_sub(1)?;
+            let value = self.map.get(&self.list[self.item_index])?;
+
+            if let Some(ttl) = self.lru_cache_ttl {
+                if value.1 + ttl > now {
+                    return Some(());
+                }
+            } else {
+                return Some(());
+            }
         }
     }
 }
@@ -193,14 +218,19 @@ where
 {
     type Item = (&'a Key, &'a Value);
 
+    /// Returns the next element in the cache that has not expired yet.
+    /// The most recently used items are yield first.
+    #[allow(unsafe_code)]
     fn next(&mut self) -> Option<(&'a Key, &'a Value)> {
         let now = Instant::now();
-        let not_expired = match self.lru_cache_ttl {
-            Some(ttl) => self
-                .map_iter
-                .find(|&(_, &(_, instant))| instant + ttl > now),
-            None => self.map_iter.next(),
-        };
-        not_expired.map(|(key, &(ref value, _))| (key, value))
+        self.next_unexpired(now)?;
+        let key = &self.list[self.item_index];
+        let value = self.map.get(&key)?;
+
+        unsafe {
+            let key = std::mem::transmute::<&Key, &'a Key>(key);
+            let value = std::mem::transmute::<&Value, &'a Value>(&value.0);
+            Some((key, value))
+        }
     }
 }
