@@ -165,21 +165,8 @@ where
     /// the cache.  Otherwise, the key-value pair is inserted and `None` is returned.
     /// Evicts and returns expired entries.
     pub fn notify_insert(&mut self, key: Key, value: Value) -> (Option<Value>, Vec<(Key, Value)>) {
-        let expired = self.remove_expired();
-
-        if self.map.contains_key(&key) {
-            Self::update_key(&mut self.list, &key);
-        } else {
-            self.remove_lru();
-            self.list.push_back(key.clone());
-        };
-
-        (
-            self.map
-                .insert(key, (value, Instant::now()))
-                .map(|pair| pair.0),
-            expired,
-        )
+        let now = Instant::now();
+        self.do_notify_insert(key, value, now)
     }
 
     /// Inserts a key-value pair into the cache.
@@ -239,14 +226,7 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        self.map
-            .get(key)
-            .into_iter()
-            .find(|&(_, t)| {
-                self.time_to_live
-                    .map_or(true, |ttl| *t + ttl >= Instant::now())
-            })
-            .map(|&(ref value, _)| value)
+        self.do_peek(key, Instant::now())
     }
 
     /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
@@ -256,17 +236,8 @@ where
         Key: Borrow<Q>,
         Q: Ord,
     {
-        let expired = self.remove_expired();
-
-        let list = &mut self.list;
-        (
-            self.map.get_mut(key).map(|result| {
-                Self::update_key(list, key);
-                result.1 = Instant::now();
-                &mut result.0
-            }),
-            expired,
-        )
+        let now = Instant::now();
+        self.do_notify_get_mut(key, now)
     }
 
     /// Retrieves a mutable reference to the value stored under `key`, or `None` if the key doesn't
@@ -294,22 +265,24 @@ where
         //
         // If this assumption is not valid, then directly iterating through all the
         // map items and counting the not expired ones would be faster (no map lookups)
+        let now = Instant::now();
         self.time_to_live.map_or(self.list.len(), |ttl| {
             self.list
                 .iter()
                 .filter_map(|key| self.map.get(key))
-                .position(|&(_, t)| t + ttl >= Instant::now())
+                .position(|&(_, t)| t + ttl >= now)
                 .map_or(0, |p| self.map.len() - p)
         })
     }
 
     /// Returns `true` if there are no non-expired entries in the cache.
     pub fn is_empty(&self) -> bool {
+        let now = Instant::now();
         self.time_to_live.map_or(self.list.is_empty(), |ttl| {
             self.list
                 .back()
                 .and_then(|key| self.map.get(key))
-                .map_or(true, |&(_, t)| t + ttl < Instant::now())
+                .map_or(true, |&(_, t)| t + ttl < now)
         })
     }
 
@@ -321,9 +294,10 @@ where
         //     Some(value) => Entry::Occupied(OccupiedEntry{value: value}),
         //     None => Entry::Vacant(VacantEntry{key: key, cache: self}),
         // }
-        if self.contains_key(&key) {
+        let now = Instant::now();
+        if self.do_peek(&key, now).is_some() {
             Entry::Occupied(OccupiedEntry {
-                value: self.get_mut(&key).expect("key not found"),
+                value: self.do_notify_get_mut(&key, now).0.expect("key not found"),
             })
         } else {
             Entry::Vacant(VacantEntry { key, cache: self })
@@ -343,7 +317,7 @@ where
     /// traversed. Also removes expired elements before creating the iterator.
     /// Values are produced in the most recently used order.
     pub fn iter(&mut self) -> Iter<'_, Key, Value> {
-        let _ = self.remove_expired();
+        let _ = self.remove_expired(Instant::now());
         Iter::new(&mut self.map, &mut self.list, self.time_to_live)
     }
 
@@ -363,14 +337,68 @@ where
         }
     }
 
+    fn do_notify_get_mut<Q: ?Sized>(
+        &mut self,
+        key: &Q,
+        now: Instant,
+    ) -> (Option<&mut Value>, Vec<(Key, Value)>)
+    where
+        Key: Borrow<Q>,
+        Q: Ord,
+    {
+        let expired = self.remove_expired(now);
+
+        let list = &mut self.list;
+        (
+            self.map.get_mut(key).map(|result| {
+                Self::update_key(list, key);
+                result.1 = now;
+                &mut result.0
+            }),
+            expired,
+        )
+    }
+
+    fn do_notify_insert(
+        &mut self,
+        key: Key,
+        value: Value,
+        now: Instant,
+    ) -> (Option<Value>, Vec<(Key, Value)>) {
+        let expired = self.remove_expired(now);
+        if self.map.contains_key(&key) {
+            Self::update_key(&mut self.list, &key);
+        } else {
+            self.remove_lru();
+            self.list.push_back(key.clone());
+        };
+
+        (
+            self.map.insert(key, (value, now)).map(|pair| pair.0),
+            expired,
+        )
+    }
+
+    fn do_peek<Q: ?Sized>(&self, key: &Q, now: Instant) -> Option<&Value>
+    where
+        Key: Borrow<Q>,
+        Q: Ord,
+    {
+        self.map
+            .get(key)
+            .into_iter()
+            .find(|&(_, t)| self.time_to_live.map_or(true, |ttl| *t + ttl >= now))
+            .map(|&(ref value, _)| value)
+    }
+
     /// If expiry timeout is set, removes expired items from the cache and returns them.
-    fn remove_expired(&mut self) -> Vec<(Key, Value)> {
+    fn remove_expired(&mut self, now: Instant) -> Vec<(Key, Value)> {
         let (map, list) = (&mut self.map, &mut self.list);
 
         if let Some(ttl) = self.time_to_live {
             let mut expired_values = Vec::new();
             for key in list.iter() {
-                if map[key].1 + ttl >= Instant::now() {
+                if map[key].1 + ttl >= now {
                     break;
                 }
                 if let Some(entry) = map.remove(key) {
@@ -903,7 +931,8 @@ mod test {
             let _ = lru_cache.insert(4, 4);
             sleep(60);
 
-            let _ = lru_cache.remove_expired();
+            let now = Instant::now();
+            let _ = lru_cache.remove_expired(now);
 
             assert_eq!(lru_cache.map.len(), 2);
             assert_eq!(lru_cache.map[&3].0, 3);
@@ -921,7 +950,8 @@ mod test {
             let _ = lru_cache.insert(4, 4);
             sleep(60);
 
-            let _ = lru_cache.remove_expired();
+            let now = Instant::now();
+            let _ = lru_cache.remove_expired(now);
 
             assert_eq!(lru_cache.list.len(), 2);
             assert_eq!(lru_cache.list[0], 3);
@@ -938,7 +968,8 @@ mod test {
             let _ = lru_cache.insert(3, 3);
             sleep(60);
 
-            let expired = lru_cache.remove_expired();
+            let now = Instant::now();
+            let expired = lru_cache.remove_expired(now);
 
             assert_eq!(expired.len(), 2);
             assert_eq!(expired[0], (1, 1));
