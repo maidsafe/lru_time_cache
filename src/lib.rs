@@ -445,8 +445,9 @@ where
 impl<'a, Key: Ord + Clone, Value> VacantEntry<'a, Key, Value> {
     /// Inserts a value
     pub fn insert(self, value: Value) -> &'a mut Value {
-        let _ = self.cache.insert(self.key.clone(), value);
-        self.cache.get_mut(&self.key).expect("key not found")
+        let now = Instant::now();
+        let _ = self.cache.do_notify_insert(self.key.clone(), value, now);
+        self.cache.do_notify_get_mut(&self.key, now).0.expect("key not found")
     }
 }
 
