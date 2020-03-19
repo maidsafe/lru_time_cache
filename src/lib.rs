@@ -877,7 +877,7 @@ mod test {
                 .map
                 .values()
                 .map(|(_, updated_at)| updated_at)
-                .nth(0)
+                .next()
                 .unwrap();
 
             let _ = lru_cache.peek_iter().collect::<Vec<_>>();
@@ -886,7 +886,7 @@ mod test {
                 .map
                 .values()
                 .map(|(_, updated_at)| updated_at)
-                .nth(0)
+                .next()
                 .unwrap();
             assert_eq!(real_time, expected_time);
         }
