@@ -55,7 +55,6 @@
     missing_docs,
     non_shorthand_field_patterns,
     overflowing_literals,
-    plugin_as_library,
     stable_features,
     unconditional_recursion,
     unknown_lints,
@@ -447,7 +446,10 @@ impl<'a, Key: Ord + Clone, Value> VacantEntry<'a, Key, Value> {
     pub fn insert(self, value: Value) -> &'a mut Value {
         let now = Instant::now();
         let _ = self.cache.do_notify_insert(self.key.clone(), value, now);
-        self.cache.do_notify_get_mut(&self.key, now).0.expect("key not found")
+        self.cache
+            .do_notify_get_mut(&self.key, now)
+            .0
+            .expect("key not found")
     }
 }
 
