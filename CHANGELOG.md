@@ -1,9 +1,15 @@
 # Lru Time Cache - Change Log
 
-## [Unreleased]
+## [0.10.0]
 
+- Move iterators into a separate module
+- Split different test cases
 - Update `LruCache::peek_iter()` order - most recently used items will be
   produced first.
+- Fix edge cases related to time atomicity
+- Fix atomicity of insert on entry
+- Make library work in Rust stable 1.41.
+- Use `next` to get the first element in the cache
 
 ## [0.9.0]
 
