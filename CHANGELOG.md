@@ -1,5 +1,9 @@
 # Lru Time Cache - Change Log
 
+## [0.11.0]
+
+- update to reference renamed sn_fake_clock crate
+
 ## [0.10.0]
 
 - Move iterators into a separate module
