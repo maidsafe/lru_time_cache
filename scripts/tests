@@ -3,4 +3,4 @@
 set -x -e
 
 cargo test "$@" --release --verbose
-cargo test "$@" --features fake_clock --release --verbose
+cargo test "$@" --features sn_fake_clock --release --verbose

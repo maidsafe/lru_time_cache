@@ -9,11 +9,11 @@
 
 //! Misc LRU cache iterators.
 
-#[cfg(feature = "fake_clock")]
-use fake_clock::FakeClock as Instant;
+#[cfg(feature = "sn_fake_clock")]
+use sn_fake_clock::FakeClock as Instant;
 use std::collections::{BTreeMap, VecDeque};
 use std::time::Duration;
-#[cfg(not(feature = "fake_clock"))]
+#[cfg(not(feature = "sn_fake_clock"))]
 use std::time::Instant;
 
 /// An iterator over an `LruCache`'s entries that updates the timestamps as values are traversed.
