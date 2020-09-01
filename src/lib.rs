@@ -82,12 +82,12 @@
     variant_size_differences
 )]
 
-#[cfg(feature = "fake_clock")]
-use fake_clock::FakeClock as Instant;
+#[cfg(feature = "sn_fake_clock")]
+use sn_fake_clock::FakeClock as Instant;
 use std::borrow::Borrow;
 use std::collections::{BTreeMap, VecDeque};
 use std::time::Duration;
-#[cfg(not(feature = "fake_clock"))]
+#[cfg(not(feature = "sn_fake_clock"))]
 use std::time::Instant;
 use std::usize;
 
@@ -487,13 +487,13 @@ mod test {
     use rand::thread_rng;
     use std::time::Duration;
 
-    #[cfg(feature = "fake_clock")]
+    #[cfg(feature = "sn_fake_clock")]
     fn sleep(time: u64) {
-        use fake_clock::FakeClock;
+        use sn_fake_clock::FakeClock;
         FakeClock::advance_time(time);
     }
 
-    #[cfg(not(feature = "fake_clock"))]
+    #[cfg(not(feature = "sn_fake_clock"))]
     fn sleep(time: u64) {
         use std::thread;
         thread::sleep(Duration::from_millis(time));
