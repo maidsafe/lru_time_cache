@@ -113,7 +113,7 @@ pub struct OccupiedEntry<'a, Value> {
     value: &'a mut Value,
 }
 
-/// Implementation of [LRU cache](index.html#least-recently-used-lru-cache).
+/// Implementation of [LRU cache](self#least-recently-used-lru-cache).
 pub struct LruCache<Key, Value> {
     map: BTreeMap<Key, (Value, Instant)>,
     list: VecDeque<Key>,
