@@ -58,6 +58,36 @@ jobs:
       with:
         max_lines_changed: 200
   
+  geiger:
+    if: ${{ github.repository_owner == 'maidsafe' }}
+    name: Cargo geiger
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      # Cache.
+      - name: Cargo cache registry, index and build
+        uses: actions/cache@v2.1.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-cache-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install geiger
+        run: cargo install --locked cargo-geiger
+      
+      # Run cargo geiger to list statistics related to the usage of unsafe Rust code in this crate and all its dependencies.
+      - name: Run Cargo geiger
+        run: cargo geiger --all-features --all-targets --all-dependencies
+  
   coverage:
     name: Code coverage check
     runs-on: ubuntu-latest
