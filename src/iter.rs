@@ -82,7 +82,7 @@ where
         let key = self.next_unexpired(now)?;
         self.list.push_back(key);
         let key = self.list.back()?;
-        let mut value = self.map.get_mut(&key)?;
+        let mut value = self.map.get_mut(key)?;
         value.1 = now;
 
         unsafe {
@@ -225,7 +225,7 @@ where
         let now = Instant::now();
         self.next_unexpired(now)?;
         let key = &self.list[self.item_index];
-        let value = self.map.get(&key)?;
+        let value = self.map.get(key)?;
 
         unsafe {
             let key = std::mem::transmute::<&Key, &'a Key>(key);

@@ -85,7 +85,7 @@
 #[cfg(feature = "sn_fake_clock")]
 use sn_fake_clock::FakeClock as Instant;
 use std::borrow::Borrow;
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{btree_map, BTreeMap, VecDeque};
 use std::time::Duration;
 #[cfg(not(feature = "sn_fake_clock"))]
 use std::time::Instant;
@@ -323,6 +323,32 @@ where
     /// Returns an iterator over all entries that does not modify the timestamps.
     pub fn peek_iter(&self) -> PeekIter<'_, Key, Value> {
         PeekIter::new(&self.map, &self.list, self.time_to_live)
+    }
+
+    /// Retains only the elements specified by the predicate. Also removes expired elements
+    /// before passing them to the predicate.
+    pub fn retain<F>(&mut self, mut f: F)
+    where
+        F: FnMut((&'_ Key, &'_ Value)) -> bool,
+    {
+        let (map, list) = (&mut self.map, &mut self.list);
+
+        let now = Instant::now();
+        let ttl = self.time_to_live;
+
+        list.retain(|key| match map.entry(key.clone()) {
+            btree_map::Entry::Occupied(entry) => {
+                if matches!(ttl, Some(ttl) if entry.get().1 + ttl < now)
+                    || !f((key, &entry.get().0))
+                {
+                    let _ = entry.remove();
+                    false
+                } else {
+                    true
+                }
+            }
+            btree_map::Entry::Vacant(_) => false,
+        });
     }
 
     // Move `key` in the ordered list to the last
@@ -750,6 +776,25 @@ mod test {
 
             assert_eq!(items.len(), 1);
             assert_eq!(items[0], (&2, &2));
+        }
+    }
+
+    mod retain {
+        use super::*;
+
+        #[test]
+        fn it_removes_all_invalid_entries() {
+            let mut lru_cache = LruCache::<usize, usize>::with_capacity(4);
+            let _ = lru_cache.insert(2, 2);
+            let _ = lru_cache.insert(0, 0);
+            let _ = lru_cache.insert(3, 3);
+            let _ = lru_cache.insert(1, 1);
+
+            lru_cache.retain(|(_, &value)| value > 1);
+
+            let cached = lru_cache.peek_iter().collect::<Vec<_>>();
+
+            assert_eq!(cached, vec![(&3, &3), (&2, &2)]);
         }
     }
 
