@@ -85,7 +85,8 @@
 #[cfg(feature = "sn_fake_clock")]
 use sn_fake_clock::FakeClock as Instant;
 use std::borrow::Borrow;
-use std::collections::{btree_map, BTreeMap, VecDeque};
+use std::collections::btree_map::Entry as BTreeMapEntry;
+use std::collections::{BTreeMap, VecDeque};
 use std::time::Duration;
 #[cfg(not(feature = "sn_fake_clock"))]
 use std::time::Instant;
@@ -337,7 +338,7 @@ where
         let ttl = self.time_to_live;
 
         list.retain(|key| match map.entry(key.clone()) {
-            btree_map::Entry::Occupied(entry) => {
+            BTreeMapEntry::Occupied(entry) => {
                 if matches!(ttl, Some(ttl) if entry.get().1 + ttl < now)
                     || !f((key, &entry.get().0))
                 {
@@ -347,7 +348,7 @@ where
                     true
                 }
             }
-            btree_map::Entry::Vacant(_) => false,
+            BTreeMapEntry::Vacant(_) => false,
         });
     }
 
