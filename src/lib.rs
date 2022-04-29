@@ -538,7 +538,7 @@ mod test {
     #[test]
     fn size_only() {
         let size = 10usize;
-        let mut lru_cache = super::LruCache::<usize, usize>::with_capacity(size);
+        let mut lru_cache = LruCache::<usize, usize>::with_capacity(size);
 
         for i in 0..10 {
             assert_eq!(lru_cache.len(), i);
@@ -561,7 +561,7 @@ mod test {
     #[test]
     fn time_only() {
         let time_to_live = Duration::from_millis(100);
-        let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+        let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
         for i in 0..10 {
             assert_eq!(lru_cache.len(), i);
@@ -589,7 +589,7 @@ mod test {
     #[test]
     fn time_only_check() {
         let time_to_live = Duration::from_millis(50);
-        let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+        let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
         assert_eq!(lru_cache.len(), 0);
         let _ = lru_cache.insert(0, 0);
@@ -606,7 +606,7 @@ mod test {
         let size = 10usize;
         let time_to_live = Duration::from_millis(100);
         let mut lru_cache =
-            super::LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);
+            LruCache::<usize, usize>::with_expiry_duration_and_capacity(time_to_live, size);
 
         for i in 0..1000 {
             if i < size {
@@ -639,7 +639,7 @@ mod test {
         let time_to_live = Duration::from_millis(100);
 
         let mut lru_cache =
-            super::LruCache::<Temp, usize>::with_expiry_duration_and_capacity(time_to_live, size);
+            LruCache::<Temp, usize>::with_expiry_duration_and_capacity(time_to_live, size);
 
         for i in 0..1000 {
             if i < size {
@@ -885,7 +885,7 @@ mod test {
         #[test]
         fn it_yields_cached_entries_in_most_recently_used_order() {
             let time_to_live = Duration::from_millis(500);
-            let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+            let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
             let _ = lru_cache.insert(1, 1);
             let _ = lru_cache.insert(2, 2);
@@ -900,7 +900,7 @@ mod test {
         #[test]
         fn it_yields_only_unexpired_entries() {
             let time_to_live = Duration::from_millis(500);
-            let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+            let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
             let _ = lru_cache.insert(1, 1);
             let _ = lru_cache.insert(2, 2);
@@ -916,7 +916,7 @@ mod test {
         #[test]
         fn it_doesnt_modify_entry_update_time() {
             let time_to_live = Duration::from_millis(500);
-            let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+            let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
             let _ = lru_cache.insert(1, 1);
             let expected_time = lru_cache
@@ -941,7 +941,7 @@ mod test {
     #[test]
     fn update_time_check() {
         let time_to_live = Duration::from_millis(500);
-        let mut lru_cache = super::LruCache::<usize, usize>::with_expiry_duration(time_to_live);
+        let mut lru_cache = LruCache::<usize, usize>::with_expiry_duration(time_to_live);
 
         assert_eq!(lru_cache.len(), 0);
         let _ = lru_cache.insert(0, 0);
@@ -957,9 +957,9 @@ mod test {
 
     #[test]
     fn deref_coercions() {
-        let mut lru_cache = super::LruCache::<String, usize>::with_capacity(1);
+        let mut lru_cache = LruCache::<String, usize>::with_capacity(1);
         let _ = lru_cache.insert("foo".to_string(), 0);
-        assert_eq!(true, lru_cache.contains_key("foo"));
+        assert!(lru_cache.contains_key("foo"));
         assert_eq!(Some(&0), lru_cache.get("foo"));
         assert_eq!(Some(&mut 0), lru_cache.get_mut("foo"));
         assert_eq!(Some(&0), lru_cache.peek("foo"));
